@@ -277,13 +277,14 @@
 .input-dinda {
   --padding-start: 20px;
   --padding-end: 20px;
-  --padding-top: 18px;
-  --padding-bottom: 18px;
-  font-size: 18px;
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+  font-size: 16px;
   --border-radius: 12px;
   --border-width: 2px;
   --border-color: #ddd;
   margin: 12px 0;
+  box-shadow: var(--ion-box-shadow);
 }
 
 .input-dinda:focus-within {
@@ -293,10 +294,9 @@
 
 // Labels destacados
 .label-dinda {
-  font-size: 18px;
+  font-size: 26px;
   font-weight: 600;
   color: var(--ion-color-dark);
-  margin-bottom: 8px;
   display: block;
 }
 

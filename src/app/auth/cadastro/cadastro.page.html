@@ -3,116 +3,140 @@
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/login"></ion-back-button>
     </ion-buttons>
-    <ion-title>Criar Conta</ion-title>
+    <ion-title>Me Cadastrar 📒</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
   <div class="ion-padding">
 
-    <ion-card class="card-dinda">
-      <ion-card-content>
-        <form [formGroup]="cadastroForm" (ngSubmit)="submitCadastro()">
+    <form [formGroup]="cadastroForm" (ngSubmit)="submitCadastro()">
+      <ion-input label="Nome Completo"
+                 label-placement="floating"
+                 fill="solid"
+                 type="text"
+                 formControlName="nome"
+                 class="input-dinda"
+      ></ion-input>
 
-          <ion-item class="input-dinda" lines="none">
-            <ion-label position="stacked" class="label-dinda">Nome Completo</ion-label>
-            <ion-input type="text" formControlName="nome"></ion-input>
-          </ion-item>
-          @if (cadastroForm.get('nome')?.touched && cadastroForm.get('nome')?.hasError('required')) {
-            <div class="error-message">Nome é obrigatório.</div>
+      @if (cadastroForm.get('nome')?.touched && cadastroForm.get('nome')?.hasError('required')) {
+        <div class="error-message">Nome é obrigatório.</div>
+      }
+      @if (cadastroForm.get('nome')?.touched && cadastroForm.get('nome')?.hasError('minlength')) {
+        <div class="error-message">O nome precisa ter no mínimo 3 caracteres.</div>
+      }
+      <ion-input label="Email"
+                 label-placement="floating"
+                 fill="solid"
+                 type="email"
+                 formControlName="email"
+                 inputmode="email"
+                 class="input-dinda"
+      ></ion-input>
+
+      @if (cadastroForm.get('email')?.touched && cadastroForm.get('email')?.invalid) {
+        <div class="error-message">Por favor, insira um email válido.</div>
+      }
+
+      <ion-item class="input-dinda ion-no-padding">
+        <ion-label>Data de Nascimento</ion-label>
+        <ion-datetime-button datetime="dataNascimento"></ion-datetime-button>
+      </ion-item>
+
+      <ion-modal [keepContentsMounted]="true">
+        <ng-template>
+          <ion-header>
+            <ion-toolbar>
+              <ion-title>Selecione a Data</ion-title>
+            </ion-toolbar>
+          </ion-header>
+          <ion-content>
+          <ion-datetime
+            id="dataNascimento"
+            formControlName="data_nascimento"
+            presentation="date"
+            [max]="maxDate">
+          </ion-datetime>
+          </ion-content>
+        </ng-template>
+      </ion-modal>
+
+      @if (cadastroForm.get('data_nascimento')?.touched && cadastroForm.get('data_nascimento')?.hasError('required')) {
+        <div class="error-message">Data de nascimento é obrigatória.</div>
+      }
+
+      <ion-input label="Telefone (Celular)"
+                 label-placement="floating"
+                 fill="solid"
+                 formControlName="telefone"
+                 class="input-dinda"
+      ></ion-input>
+      @if (cadastroForm.get('telefone')?.touched && cadastroForm.get('telefone')?.invalid) {
+        <div class="error-message">Telefone inválido.</div>
+      }
+
+      <ion-input  label="Senha"
+                  label-placement="floating"
+                  fill="solid"
+                  type="password"
+                  formControlName="senha"
+                  class="input-dinda"
+      ></ion-input>
+      @if (cadastroForm.get('senha')?.touched && cadastroForm.get('senha')?.hasError('required')) {
+        <div class="error-message">Senha é obrigatória.</div>
+      }
+      @if (cadastroForm.get('senha')?.touched && cadastroForm.get('senha')?.hasError('minlength')) {
+        <div class="error-message">A senha precisa ter no mínimo 6 caracteres.</div>
+      }
+
+      <ion-input  label="Confirmar Senha"
+                  label-placement="floating"
+                  fill="solid"
+                  type="password"
+                  formControlName="confirmarSenha"
+                  class="input-dinda"
+      ></ion-input>
+      @if (cadastroForm.errors?.['senhasNaoConferem'] && cadastroForm.get('confirmarSenha')?.touched) {
+        <div class="error-message">
+          As senhas não conferem.
+        </div>
+      }
+
+      <ion-label class="label-dinda ion-margin-top">Eu sou:</ion-label>
+      <ion-segment formControlName="tipo_usuario" class="segment-dinda" value="cliente">
+        <ion-segment-button value="cliente">
+          <ion-label>Paciente /<br>Cuidador</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="farmaceutico">
+          <ion-label>Farmacêutico</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+
+      @if (cadastroForm.get('tipo_usuario')?.value === 'farmaceutico') {
+        <div class="ion-margin-top">
+
+          <ion-input  label="CRF"
+                      label-placement="floating"
+                      fill="solid"
+                      type="text"
+                      formControlName="crf"
+                      class="input-dinda"
+          ></ion-input>
+          @if (cadastroForm.get('crf')?.touched && cadastroForm.get('crf')?.invalid) {
+            <div class="error-message">CRF é obrigatório para farmacêuticos.</div>
           }
-          @if (cadastroForm.get('nome')?.touched && cadastroForm.get('nome')?.hasError('minlength')) {
-            <div class="error-message">O nome precisa ter no mínimo 3 caracteres.</div>
-          }
+        </div>
+      }
 
-          <ion-item class="input-dinda" lines="none">
-            <ion-label position="stacked" class="label-dinda">Email</ion-label>
-            <ion-input type="email" formControlName="email"></ion-input>
-          </ion-item>
-          @if (cadastroForm.get('email')?.touched && cadastroForm.get('email')?.invalid) {
-            <div class="error-message">Por favor, insira um email válido.</div>
-          }
-
-          <ion-item class="input-dinda" lines="none">
-            <ion-label position="stacked" class="label-dinda">Data de Nascimento</ion-label>
-            <ion-datetime-button datetime="dataNascimento"></ion-datetime-button>
-            <ion-modal [keepContentsMounted]="true">
-              <ion-datetime
-                id="dataNascimento"
-                formControlName="data_nascimento"
-                presentation="date"
-                [max]="maxDate">
-              </ion-datetime>
-            </ion-modal>
-          </ion-item>
-          @if (cadastroForm.get('data_nascimento')?.touched && cadastroForm.get('data_nascimento')?.hasError('required')) {
-            <div class="error-message">Data de nascimento é obrigatória.</div>
-          }
-
-          <ion-item class="input-dinda" lines="none">
-            <ion-label position="stacked" class="label-dinda">Telefone (Celular)</ion-label>
-            <ion-input type="tel" formControlName="telefone"></ion-input>
-          </ion-item>
-          @if (cadastroForm.get('telefone')?.touched && cadastroForm.get('telefone')?.invalid) {
-            <div class="error-message">Telefone inválido.</div>
-          }
-
-          <ion-item class="input-dinda" lines="none">
-            <ion-label position="stacked" class="label-dinda">Senha (mín. 6 caracteres)</ion-label>
-            <ion-input type="password" formControlName="senha"></ion-input>
-          </ion-item>
-          @if (cadastroForm.get('senha')?.touched && cadastroForm.get('senha')?.hasError('required')) {
-            <div class="error-message">Senha é obrigatória.</div>
-          }
-          @if (cadastroForm.get('senha')?.touched && cadastroForm.get('senha')?.hasError('minlength')) {
-            <div class="error-message">A senha precisa ter no mínimo 6 caracteres.</div>
-          }
-
-          <ion-item class="input-dinda" lines="none">
-            <ion-label position="stacked" class="label-dinda">Confirmar Senha</ion-label>
-            <ion-input type="password" formControlName="confirmarSenha"></ion-input>
-          </ion-item>
-          @if (cadastroForm.errors?.['senhasNaoConferem'] && cadastroForm.get('confirmarSenha')?.touched) {
-            <div class="error-message">
-              As senhas não conferem.
-            </div>
-          }
-
-
-          <ion-label class="label-dinda ion-margin-top">Eu sou:</ion-label>
-          <ion-segment formControlName="tipo_usuario" class="segment-dinda" value="cliente">
-            <ion-segment-button value="cliente">
-              <ion-label>Paciente / Cuidador</ion-label>
-            </ion-segment-button>
-            <ion-segment-button value="farmaceutico">
-              <ion-label>Farmacêutico</ion-label>
-            </ion-segment-button>
-          </ion-segment>
-
-          @if (cadastroForm.get('tipo_usuario')?.value === 'farmaceutico') {
-            <div class="ion-margin-top">
-              <ion-item class="input-dinda" lines="none">
-                <ion-label position="stacked" class="label-dinda">CRF (Conselho Regional de Farmácia)</ion-label>
-                <ion-input type="text" formControlName="crf"></ion-input>
-              </ion-item>
-              @if (cadastroForm.get('crf')?.touched && cadastroForm.get('crf')?.invalid) {
-                <div class="error-message">CRF é obrigatório para farmacêuticos.</div>
-              }
-            </div>
-          }
-
-          <ion-button
-            type="submit"
-            [disabled]="cadastroForm.invalid"
-            class="btn-large ion-margin-top"
-            expand="block"
-            color="primary">
-            Finalizar Cadastro
-          </ion-button>
-
-        </form>
-      </ion-card-content>
-    </ion-card>
+      <ion-button
+        type="submit"
+        [disabled]="cadastroForm.invalid"
+        class="btn-large ion-margin-top"
+        expand="block"
+        color="primary">
+        Finalizar Cadastro
+      </ion-button>
+    </form>
 
   </div>
 </ion-content>

@@ -14,22 +14,26 @@
 
       <ion-card-content>
         <form [formGroup]="loginForm" (ngSubmit)="submitLogin()">
-
-          <ion-item class="input-dinda" lines="none">
-            <ion-label position="stacked" class="label-dinda">Email</ion-label>
-            <ion-input type="email" formControlName="email" inputmode="email"></ion-input>
-          </ion-item>
+          <ion-input label="Email"
+                     label-placement="floating"
+                     fill="solid"
+                     type="email"
+                     formControlName="email"
+                     inputmode="email"
+                     class="input-dinda"
+          ></ion-input>
           @if (loginForm.get('email')?.touched && loginForm.get('email')?.invalid) {
             <div class="error-message">
               Por favor, insira um email válido.
             </div>
           }
-
-          <ion-item class="input-dinda" lines="none">
-            <ion-label position="stacked" class="label-dinda">Senha</ion-label>
-            <ion-input type="password" formControlName="senha"></ion-input>
-          </ion-item>
-
+          <ion-input  label="Senha"
+                      label-placement="floating"
+                      fill="solid"
+                      type="password"
+                      formControlName="senha"
+                      class="input-dinda"
+          ></ion-input>
           <ion-button
             type="submit"
             [disabled]="loginForm.invalid"

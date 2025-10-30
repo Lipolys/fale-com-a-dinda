@@ -43,7 +43,7 @@ export class CadastroPage implements OnInit {
     this.cadastroForm = this.fb.group({
       nome: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
-      data_nascimento: ['', [Validators.required]],
+      data_nascimento: [null, [Validators.required]],
       telefone: ['', [Validators.required, Validators.minLength(10)]],
       senha: ['', [Validators.required, Validators.minLength(6)]],
       confirmarSenha: ['', [Validators.required]],
