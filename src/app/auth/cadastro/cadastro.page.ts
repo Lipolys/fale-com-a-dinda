@@ -91,8 +91,8 @@ export class CadastroPage implements OnInit {
     this.authService.cadastrar(dadosForm).subscribe({
       next: () => {
         loading.dismiss();
-        this.presentToast('Cadastro realizado com sucesso!', 'success');
-        this.router.navigateByUrl('/app/tab1', { replaceUrl: true });
+        this.presentToast('Cadastro realizado com sucesso! Faça o login.', 'success');
+        this.router.navigateByUrl('/login', { replaceUrl: true }); // <-- MUDANÇA AQUI
       },
       error: async (err) => {
         loading.dismiss();

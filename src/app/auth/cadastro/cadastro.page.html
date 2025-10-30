@@ -38,27 +38,6 @@
         <div class="error-message">Por favor, insira um email válido.</div>
       }
 
-      <ion-label label-placement="floating"
-                 fill="solid"
-                 class="input-dinda"> Data de Nascimento</ion-label>
-      <ion-datetime-button datetime="dataNascimento"></ion-datetime-button>
-      <ion-modal [keepContentsMounted]="true">
-        <ng-template>
-          <ion-datetime
-            id="dataNascimento"
-            formControlName="data_nascimento"
-            presentation="date"
-            [max]="maxDate"
-          ></ion-datetime>
-        </ng-template>
-      </ion-modal>
-
-
-
-      @if (cadastroForm.get('data_nascimento')?.touched && cadastroForm.get('data_nascimento')?.hasError('required')) {
-        <div class="error-message">Data de nascimento é obrigatória.</div>
-      }
-
       <ion-input label="Telefone (Celular)"
                  label-placement="floating"
                  fill="solid"
@@ -94,6 +73,24 @@
         <div class="error-message">
           As senhas não conferem.
         </div>
+      }
+
+      <ion-label label-placement="floating"
+                 fill="solid"
+                 class="input-dinda"> Data de Nascimento</ion-label>
+      <ion-datetime-button datetime="dataNascimento"></ion-datetime-button>
+      <ion-modal [keepContentsMounted]="true">
+        <ng-template>
+          <ion-datetime
+            id="dataNascimento"
+            formControlName="data_nascimento"
+            presentation="date"
+            [max]="maxDate"
+          ></ion-datetime>
+        </ng-template>
+      </ion-modal>
+      @if (cadastroForm.get('data_nascimento')?.touched && cadastroForm.get('data_nascimento')?.hasError('required')) {
+        <div class="error-message">Data de nascimento é obrigatória.</div>
       }
 
       <ion-label class="label-dinda ion-margin-top">Eu sou:</ion-label>

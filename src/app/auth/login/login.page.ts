@@ -46,7 +46,7 @@ export class LoginPage implements OnInit {
     this.authService.login(email, senha).subscribe({
       next: () => {
         loading.dismiss();
-        this.router.navigateByUrl('/app/tab1', { replaceUrl: true });
+        this.router.navigateByUrl('app', { replaceUrl: true });
       },
       error: async (err) => {
         loading.dismiss();

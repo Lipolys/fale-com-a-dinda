@@ -84,20 +84,15 @@ export class AuthService {
   /**
    * Tenta cadastrar um novo usuário no backend
    */
-  cadastrar(dados: any): Observable<AuthData> {
-    return this.http.post<AuthData>(`${this.API_URL}/usuario/cadastrar`, dados)
+  cadastrar(dados: any): Observable<any> { // Alterado o tipo de retorno, pode ser 'any' ou uma interface de utilizador (sem AuthData)
+    return this.http.post<any>(`${this.API_URL}/usuario/cadastrar`, dados) // Alterado para <any>
       .pipe(
-        switchMap(response => {
-          return from(this.storage.set(STORAGE_KEYS.AUTH_DATA, response)).pipe(
-            tap(() => {
-              this.authState.next(true);
-            }),
-            map(() => response)
-          );
+        tap(() => {
+          console.log('Cadastro enviado ao backend.');
         }),
         catchError(err => {
           console.error('Erro no cadastro:', err);
-          this.authState.next(false);
+          // Não definimos o authState aqui
           throw new Error(err.error?.erro || 'Erro ao tentar cadastrar');
         })
       );
