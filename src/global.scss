@@ -35,3 +35,66 @@
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import "@ionic/angular/css/palettes/dark.system.css";
+
+
+// Estilos globais customizados
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+// Garantir fonte maior em todo o app
+html {
+  font-size: 18px;
+}
+
+// Melhorar legibilidade
+body {
+  font-family: var(--ion-font-family);
+  line-height: 1.6;
+}
+
+// Botões sempre grandes e tocáveis
+ion-button {
+  text-transform: none;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+// Itens de lista mais espaçados
+ion-item {
+  --min-height: 70px;
+}
+
+// Modais com bordas arredondadas
+ion-modal {
+  --border-radius: 20px;
+}
+
+// Alertas customizados
+.alert-dinda {
+  .alert-wrapper {
+    border-radius: 16px;
+  }
+
+  .alert-head {
+    padding: 24px 20px 16px;
+  }
+
+  .alert-title {
+    font-size: 24px !important;
+    font-weight: 700;
+    color: var(--ion-color-primary);
+  }
+
+  .alert-message {
+    font-size: 18px !important;
+    line-height: 1.6;
+    color: #333;
+  }
+
+  .alert-button {
+    font-size: 18px !important;
+    font-weight: 600;
+    height: 50px;
+  }
+}

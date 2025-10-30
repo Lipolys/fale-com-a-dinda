@@ -1,17 +1,128 @@
-<ion-header [translucent]="true">
+<ion-header class="header-dinda">
   <ion-toolbar>
-    <ion-title>
-      Tab 1
-    </ion-title>
+    <ion-buttons slot="start">
+      <ion-button>
+        <ion-icon slot="icon-only" name="menu"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>💊 Meus Remédios</ion-title>
+    <ion-buttons slot="end">
+      <ion-button>
+        <ion-icon slot="icon-only" name="notifications"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Tab 1</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content>
+  <!-- Alerta de lembrete -->
+  <div class="alert-dinda alert-warning">
+    <ion-icon name="alarm"></ion-icon>
+    <div>
+      <strong>Lembrete!</strong><br>
+      Hora de tomar Dipirona - 14h00
+    </div>
+  </div>
 
-  <app-explore-container name="Tab 1 page"></app-explore-container>
+  <!-- Título da seção -->
+  <h2 class="section-title">📋 Remédios de Hoje</h2>
+
+  <!-- Lista de medicamentos -->
+  <ion-list>
+    <!-- Item 1 - Já tomado -->
+    <ion-item class="list-item-dinda" button>
+      <ion-icon slot="start" name="checkmark-circle" color="success" class="icon-large"></ion-icon>
+      <ion-label>
+        <h2 style="font-size: 20px; font-weight: 600; color: #333; margin-bottom: 6px;">
+          Dipirona 500mg
+        </h2>
+        <p style="font-size: 16px; color: #666;">
+          8h00 - Tomado ✓
+        </p>
+        <p style="font-size: 16px; color: #666;">
+          1 comprimido após café
+        </p>
+      </ion-label>
+      <ion-badge slot="end" color="success" class="badge-dinda">
+        Feito
+      </ion-badge>
+    </ion-item>
+
+    <!-- Item 2 - Próximo -->
+    <ion-item class="list-item-dinda" button>
+      <ion-icon slot="start" name="time" color="warning" class="icon-large"></ion-icon>
+      <ion-label>
+        <h2 style="font-size: 20px; font-weight: 600; color: #333; margin-bottom: 6px;">
+          Losartana 50mg
+        </h2>
+        <p style="font-size: 16px; color: #f4a261; font-weight: 600;">
+          14h00 - Em 30 minutos
+        </p>
+        <p style="font-size: 16px; color: #666;">
+          1 comprimido com água
+        </p>
+      </ion-label>
+      <ion-badge slot="end" color="warning" class="badge-dinda">
+        Próximo
+      </ion-badge>
+    </ion-item>
+
+    <!-- Item 3 - Pendente -->
+    <ion-item class="list-item-dinda" button>
+      <ion-icon slot="start" name="ellipse-outline" color="medium" class="icon-large"></ion-icon>
+      <ion-label>
+        <h2 style="font-size: 20px; font-weight: 600; color: #333; margin-bottom: 6px;">
+          Metformina 850mg
+        </h2>
+        <p style="font-size: 16px; color: #666;">
+          20h00 - Após jantar
+        </p>
+        <p style="font-size: 16px; color: #666;">
+          1 comprimido
+        </p>
+      </ion-label>
+      <ion-badge slot="end" color="medium" class="badge-dinda">
+        Pendente
+      </ion-badge>
+    </ion-item>
+  </ion-list>
+
+  <!-- Botões de ação -->
+  <div style="padding: 20px;">
+    <ion-button expand="block" class="btn-large" color="primary">
+      <ion-icon slot="start" name="add-circle"></ion-icon>
+      Adicionar Novo Remédio
+    </ion-button>
+
+    <ion-button expand="block" class="btn-large" color="secondary" fill="outline">
+      <ion-icon slot="start" name="calendar"></ion-icon>
+      Ver Histórico
+    </ion-button>
+  </div>
+
+  <!-- Card de dica -->
+  <div class="card-dinda" style="margin-top: 24px;">
+    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+      <ion-icon name="bulb" color="secondary" class="icon-large"></ion-icon>
+      <h3 style="font-size: 20px; font-weight: 600; color: #2d5f8d; margin: 0;">
+        Dica da Dinda
+      </h3>
+    </div>
+    <p style="font-size: 18px; line-height: 1.8; color: #333; margin: 0;">
+      Lembre-se de beber bastante água ao tomar seus medicamentos.
+      Isso ajuda na absorção e previne efeitos colaterais.
+    </p>
+  </div>
+
+  <!-- Alerta de interação -->
+  <div class="alert-dinda alert-danger" style="margin-top: 20px;">
+    <ion-icon name="warning"></ion-icon>
+    <div>
+      <strong>Atenção!</strong><br>
+      Dipirona + Aspirina podem interagir. Consulte seu médico.
+    </div>
+  </div>
+
+  <!-- Espaçamento final -->
+  <div style="height: 40px;"></div>
 </ion-content>

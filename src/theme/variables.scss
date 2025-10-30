@@ -1,2 +1,381 @@
-// For information on how to create your own theme, please see:
-// http://ionicframework.com/docs/theming/
+// Ionic Variables and Theming - Fale com a Dinda
+// Otimizado para público idoso
+
+// Paleta de Cores Principal
+:root {
+  // Cores Primárias
+  --ion-color-primary: #2d5f8d;
+  --ion-color-primary-rgb: 45, 95, 141;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #28537c;
+  --ion-color-primary-tint: #426f98;
+
+  // Cores Secundárias (Laranja Caloroso)
+  --ion-color-secondary: #f4a261;
+  --ion-color-secondary-rgb: 244, 162, 97;
+  --ion-color-secondary-contrast: #ffffff;
+  --ion-color-secondary-contrast-rgb: 255, 255, 255;
+  --ion-color-secondary-shade: #d78f56;
+  --ion-color-secondary-tint: #f5ab71;
+
+  // Sucesso (Verde Saúde)
+  --ion-color-success: #52b788;
+  --ion-color-success-rgb: 82, 183, 136;
+  --ion-color-success-contrast: #ffffff;
+  --ion-color-success-contrast-rgb: 255, 255, 255;
+  --ion-color-success-shade: #48a178;
+  --ion-color-success-tint: #63be94;
+
+  // Perigo (Vermelho Alerta)
+  --ion-color-danger: #e63946;
+  --ion-color-danger-rgb: 230, 57, 70;
+  --ion-color-danger-contrast: #ffffff;
+  --ion-color-danger-contrast-rgb: 255, 255, 255;
+  --ion-color-danger-shade: #ca323e;
+  --ion-color-danger-tint: #e94d59;
+
+  // Avisos
+  --ion-color-warning: #ffc107;
+  --ion-color-warning-rgb: 255, 193, 7;
+  --ion-color-warning-contrast: #000000;
+  --ion-color-warning-contrast-rgb: 0, 0, 0;
+  --ion-color-warning-shade: #e0a800;
+  --ion-color-warning-tint: #ffca22;
+
+  // Médio (cinza médio para desabilitados)
+  --ion-color-medium: #95a5a6;
+  --ion-color-medium-rgb: 149, 165, 166;
+  --ion-color-medium-contrast: #ffffff;
+  --ion-color-medium-contrast-rgb: 255, 255, 255;
+  --ion-color-medium-shade: #838f90;
+  --ion-color-medium-tint: #a0aeaf;
+
+  // Claro (backgrounds)
+  --ion-color-light: #f8f9fa;
+  --ion-color-light-rgb: 248, 249, 250;
+  --ion-color-light-contrast: #000000;
+  --ion-color-light-contrast-rgb: 0, 0, 0;
+  --ion-color-light-shade: #dadbdc;
+  --ion-color-light-tint: #f9fafb;
+
+  // Escuro (textos)
+  --ion-color-dark: #333333;
+  --ion-color-dark-rgb: 51, 51, 51;
+  --ion-color-dark-contrast: #ffffff;
+  --ion-color-dark-contrast-rgb: 255, 255, 255;
+  --ion-color-dark-shade: #2d2d2d;
+  --ion-color-dark-tint: #474747;
+
+  // ===== TIPOGRAFIA AUMENTADA =====
+  --ion-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+  // Tamanhos de fonte maiores para idosos
+  --ion-font-size-base: 18px; // Aumentado de 14px
+  --ion-font-size-large: 22px; // Aumentado de 16px
+  --ion-font-size-xlarge: 26px; // Aumentado de 20px
+
+  // ===== ESPAÇAMENTO GENEROSO =====
+  --ion-padding: 20px;
+  --ion-margin: 20px;
+
+  // ===== BORDAS ARREDONDADAS =====
+  --ion-border-radius: 12px;
+
+  // ===== BACKGROUNDS =====
+  --ion-background-color: #f8f9fa;
+  --ion-background-color-rgb: 248, 249, 250;
+
+  --ion-text-color: #333333;
+  --ion-text-color-rgb: 51, 51, 51;
+
+  --ion-toolbar-background: #2d5f8d;
+  --ion-toolbar-color: #ffffff;
+
+  --ion-item-background: #ffffff;
+
+  // ===== SOMBRAS MAIS SUAVES =====
+  --ion-box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --ion-box-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+// ===== MODO ESCURO (OPCIONAL) =====
+// Descomente se quiser suporte ao modo escuro
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ion-color-primary: #4a8fc7;
+    --ion-background-color: #1a1a1a;
+    --ion-text-color: #e0e0e0;
+    --ion-toolbar-background: #2d2d2d;
+    --ion-item-background: #2d2d2d;
+  }
+}
+
+
+// ===== CLASSES CUSTOMIZADAS =====
+
+// Títulos maiores e mais legíveis
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--ion-color-primary);
+  margin: 20px 0;
+  padding: 0 20px;
+}
+
+.section-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+  margin: 16px 0 12px;
+  padding: 0 20px;
+}
+
+// Botões com tamanho de toque maior
+.btn-large {
+  --padding-top: 20px;
+  --padding-bottom: 20px;
+  --padding-start: 28px;
+  --padding-end: 28px;
+  font-size: 20px;
+  font-weight: 600;
+  --border-radius: 12px;
+  height: 56px; // Mínimo recomendado para idosos
+  margin: 12px 0;
+}
+
+// Cards com visual amigável
+.card-dinda {
+  border-radius: 16px;
+  box-shadow: var(--ion-box-shadow);
+  margin: 16px;
+  padding: 20px;
+  background: var(--ion-item-background);
+}
+
+.card-dinda:hover {
+  box-shadow: var(--ion-box-shadow-hover);
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+
+// Ícones maiores
+.icon-large {
+  font-size: 32px;
+  width: 48px;
+  height: 48px;
+}
+
+.icon-xlarge {
+  font-size: 48px;
+  width: 64px;
+  height: 64px;
+}
+
+// Lista de itens com espaçamento generoso
+.list-item-dinda {
+  --padding-start: 20px;
+  --padding-end: 20px;
+  --padding-top: 16px;
+  --padding-bottom: 16px;
+  --min-height: 80px;
+  font-size: 18px;
+  border-radius: 12px;
+  margin: 8px 16px;
+  background: var(--ion-item-background);
+  box-shadow: var(--ion-box-shadow);
+}
+
+// Alertas com visual destacado
+.alert-dinda {
+  padding: 20px;
+  border-radius: 12px;
+  margin: 16px;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  ion-icon {
+    font-size: 32px;
+  }
+}
+
+.alert-info {
+  background: #e8f4f8;
+  color: var(--ion-color-primary);
+  border-left: 5px solid var(--ion-color-primary);
+}
+
+.alert-success {
+  background: #d8f3dc;
+  color: #2d6a4f;
+  border-left: 5px solid var(--ion-color-success);
+}
+
+.alert-warning {
+  background: #fff3cd;
+  color: #856404;
+  border-left: 5px solid var(--ion-color-warning);
+}
+
+.alert-danger {
+  background: #f8d7da;
+  color: #721c24;
+  border-left: 5px solid var(--ion-color-danger);
+}
+
+// Inputs com tamanho aumentado
+.input-dinda {
+  --padding-start: 20px;
+  --padding-end: 20px;
+  --padding-top: 18px;
+  --padding-bottom: 18px;
+  font-size: 18px;
+  --border-radius: 12px;
+  --border-width: 2px;
+  --border-color: #ddd;
+  margin: 12px 0;
+}
+
+.input-dinda:focus-within {
+  --border-color: var(--ion-color-primary);
+  --highlight-color: var(--ion-color-primary);
+}
+
+// Labels destacados
+.label-dinda {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+  margin-bottom: 8px;
+  display: block;
+}
+
+// Badges/Chips maiores
+.badge-dinda {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+// Tab bar com ícones e textos
+.tab-bar-dinda {
+  --background: #ffffff;
+  height: 80px;
+  padding-top: 8px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+
+  ion-tab-button {
+    --padding-top: 8px;
+    --padding-bottom: 8px;
+    font-size: 14px;
+
+    ion-icon {
+      font-size: 28px;
+      margin-bottom: 4px;
+    }
+
+    ion-label {
+      font-size: 13px;
+      font-weight: 500;
+    }
+  }
+}
+
+// Header com visual marcante
+.header-dinda {
+  --background: var(--ion-color-primary);
+  --color: white;
+
+  ion-toolbar {
+    --padding-top: 12px;
+    --padding-bottom: 12px;
+    --min-height: 70px;
+  }
+
+  ion-title {
+    font-size: 24px;
+    font-weight: 700;
+  }
+
+  ion-buttons ion-button {
+    --padding-start: 16px;
+    --padding-end: 16px;
+    font-size: 20px;
+  }
+}
+
+// Toast/mensagens temporárias
+.toast-dinda {
+  --min-height: 70px;
+  font-size: 18px;
+  --border-radius: 12px;
+  --box-shadow: var(--ion-box-shadow-hover);
+}
+
+// Skeleton loading amigável
+.skeleton-dinda {
+  --background: #e0e0e0;
+  --background-rgb: 224, 224, 224;
+  border-radius: 12px;
+}
+
+// Modal com visual destacado
+.modal-dinda {
+  --border-radius: 20px;
+  --box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+
+  .modal-content {
+    padding: 24px;
+  }
+
+  .modal-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--ion-color-primary);
+    margin-bottom: 20px;
+  }
+
+  .modal-text {
+    font-size: 18px;
+    line-height: 1.8;
+    color: var(--ion-color-dark);
+  }
+}
+
+// Segmento de seleção
+.segment-dinda {
+  --background: #f0f0f0;
+  padding: 4px;
+  border-radius: 12px;
+
+  ion-segment-button {
+    --indicator-color: var(--ion-color-primary);
+    --color-checked: white;
+    font-size: 16px;
+    font-weight: 600;
+    min-height: 48px;
+  }
+}
+
+// Espaçamento global
+ion-content {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 16px;
+  --padding-bottom: 16px;
+}
+
+// Lista sem linhas divisórias
+ion-list {
+  background: transparent;
+  padding: 0;
+}
+
+ion-item {
+  --border-color: transparent;
+  margin-bottom: 8px;
+}
