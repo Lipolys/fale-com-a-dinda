@@ -1,0 +1,52 @@
+<ion-content [fullscreen]="true">
+  <div class="ion-padding container-center">
+
+    <div class="logo-container">
+      <img src="assets/icon/favicon.png" alt="Logo Fale com a Dinda" />
+      <h1 class="app-title">Fale com a Dinda</h1>
+      <p class="app-subtitle">Cuidando de perto</p>
+    </div>
+
+    <ion-card class="card-dinda">
+      <ion-card-header>
+        <ion-card-title class="ion-text-center page-title">Entrar</ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        <form [formGroup]="loginForm" (ngSubmit)="submitLogin()">
+
+          <ion-item class="input-dinda" lines="none">
+            <ion-label position="stacked" class="label-dinda">Email</ion-label>
+            <ion-input type="email" formControlName="email" inputmode="email"></ion-input>
+          </ion-item>
+          @if (loginForm.get('email')?.touched && loginForm.get('email')?.invalid) {
+            <div class="error-message">
+              Por favor, insira um email válido.
+            </div>
+          }
+
+          <ion-item class="input-dinda" lines="none">
+            <ion-label position="stacked" class="label-dinda">Senha</ion-label>
+            <ion-input type="password" formControlName="senha"></ion-input>
+          </ion-item>
+
+          <ion-button
+            type="submit"
+            [disabled]="loginForm.invalid"
+            class="btn-large ion-margin-top"
+            expand="block"
+            color="primary">
+            Entrar
+          </ion-button>
+
+        </form>
+
+        <div class="ion-text-center ion-margin-top link-cadastro">
+          <span>Não tem conta?</span>
+          <a routerLink="/cadastro">Cadastre-se aqui</a>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+  </div>
+</ion-content>

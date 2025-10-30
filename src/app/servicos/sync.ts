@@ -33,7 +33,7 @@ export interface SyncState {
 })
 export class SyncService {
 
-  private readonly API_URL = 'http://localhost:3000'; // Adicionar variável de ambiente futuramente
+  private readonly API_URL = environment.apiUrl// Adicionar variável de ambiente futuramente
 
   // Estado da sincronização (Observable para UI reagir)
   private syncState = new BehaviorSubject<SyncState>({

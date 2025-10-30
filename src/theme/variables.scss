@@ -104,11 +104,58 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --ion-color-primary: #4a8fc7;
-    --ion-background-color: #1a1a1a;
+    // Redefinição das cores base (o que você já tinha)
+    --ion-background-color: #121212; // Um cinza escuro é melhor que preto puro
+    --ion-background-color-rgb: 18, 18, 18;
     --ion-text-color: #e0e0e0;
-    --ion-toolbar-background: #2d2d2d;
-    --ion-item-background: #2d2d2d;
+    --ion-text-color-rgb: 224, 224, 224;
+
+    --ion-toolbar-background: #1e1e1e;
+    --ion-item-background: #1e1e1e; // Fundo de itens e cards
+
+    // ===============================================
+    // SUGESTÃO 1: Redefinir TODAS as cores semânticas
+    // ===============================================
+
+    // Primária (um pouco mais clara para contraste)
+    --ion-color-primary: #4a8fc7;
+    --ion-color-primary-rgb: 74, 143, 199;
+    --ion-color-primary-contrast: #ffffff;
+    --ion-color-primary-contrast-rgb: 255, 255, 255;
+    --ion-color-primary-shade: #417db0;
+    --ion-color-primary-tint: #5c99ce;
+
+    // Secundária (um pouco mais clara)
+    --ion-color-secondary: #f6ab73;
+    // ... (defina rgb, contrast, shade, tint para secondary) ...
+
+    // Sucesso
+    --ion-color-success: #67c79a;
+    // ... (defina rgb, contrast, shade, tint para success) ...
+
+    // Perigo
+    --ion-color-danger: #ea5965;
+    // ... (defina rgb, contrast, shade, tint para danger) ...
+
+    // Aviso
+    --ion-color-warning: #ffd13a;
+    // ... (defina rgb, contrast, shade, tint para warning) ...
+
+    // Médio (para textos/ícones desabilitados)
+    --ion-color-medium: #7a7a7a;
+    // ... (defina rgb, contrast, shade, tint para medium) ...
+
+    // Claro (IMPORTANTE: Inverte com o 'dark')
+    --ion-color-light: #1e1e1e; // Cor de "fundo claro" agora é escura
+    --ion-color-light-rgb: 30, 30, 30;
+    --ion-color-light-contrast: #e0e0e0; // Texto sobre fundo claro agora é claro
+    --ion-color-light-contrast-rgb: 224, 224, 224;
+
+    // Escuro (IMPORTANTE: Inverte com o 'light')
+    --ion-color-dark: #e0e0e0; // Cor de "texto escuro" agora é clara
+    --ion-color-dark-rgb: 224, 224, 224;
+    --ion-color-dark-contrast: #121212; // Texto sobre fundo escuro agora é escuro
+    --ion-color-dark-contrast-rgb: 18, 18, 18;
   }
 }
 

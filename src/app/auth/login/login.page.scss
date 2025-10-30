@@ -1,0 +1,64 @@
+// src/app/auth/login/login.page.scss
+
+.container-center {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100%;
+}
+
+.logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 24px;
+
+  img {
+    width: 100px;
+    height: 100px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    box-shadow: var(--ion-box-shadow);
+  }
+
+  .app-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--ion-color-primary);
+    margin: 0;
+  }
+
+  .app-subtitle {
+    font-size: 18px;
+    color: var(--ion-color-medium);
+    margin-top: 4px;
+  }
+}
+
+// Sobrescreve o título da página para este contexto
+.page-title {
+  font-size: 26px;
+  margin: 0;
+  padding: 0;
+}
+
+.error-message {
+  color: var(--ion-color-danger);
+  font-size: 14px;
+  padding-left: 16px;
+  padding-bottom: 8px;
+}
+
+.link-cadastro {
+  font-size: 16px;
+  span {
+    color: var(--ion-color-medium);
+    margin-right: 8px;
+  }
+  a {
+    font-weight: 600;
+    color: var(--ion-color-primary);
+    text-decoration: none;
+  }
+}
