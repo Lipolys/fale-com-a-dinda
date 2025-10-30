@@ -156,6 +156,8 @@
     --ion-color-dark-rgb: 224, 224, 224;
     --ion-color-dark-contrast: #121212; // Texto sobre fundo escuro agora é escuro
     --ion-color-dark-contrast-rgb: 18, 18, 18;
+
+
   }
 }
 
@@ -395,7 +397,7 @@
 
 // Segmento de seleção
 .segment-dinda {
-  --background: #f0f0f0;
+  --background: var(--ion-item-background);
   padding: 4px;
   border-radius: 12px;
 

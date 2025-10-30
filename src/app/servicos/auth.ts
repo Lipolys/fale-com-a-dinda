@@ -63,7 +63,7 @@ export class AuthService {
    * Tenta fazer o login no backend
    */
   login(email: string, senha: string): Observable<AuthData> {
-    return this.http.post<AuthData>(`${this.API_URL}/login`, { email, senha })
+    return this.http.post<AuthData>(`${this.API_URL}/usuario/login`, { email, senha })
       .pipe(
         switchMap(response => {
           return from(this.storage.set(STORAGE_KEYS.AUTH_DATA, response)).pipe(
@@ -85,7 +85,7 @@ export class AuthService {
    * Tenta cadastrar um novo usuário no backend
    */
   cadastrar(dados: any): Observable<AuthData> {
-    return this.http.post<AuthData>(`${this.API_URL}/cadastrar`, dados)
+    return this.http.post<AuthData>(`${this.API_URL}/usuario/cadastrar`, dados)
       .pipe(
         switchMap(response => {
           return from(this.storage.set(STORAGE_KEYS.AUTH_DATA, response)).pipe(

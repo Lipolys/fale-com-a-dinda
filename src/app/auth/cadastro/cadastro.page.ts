@@ -81,8 +81,12 @@ export class CadastroPage implements OnInit {
     const dadosForm = { ...this.cadastroForm.value };
     delete dadosForm.confirmarSenha;
 
-    // Formata a data (se necessário pelo backend)
-    // dadosForm.data_nascimento = new Date(dadosForm.data_nascimento).toISOString().split('T')[0];
+    // Ajusta os dados para o formato esperado pelo backend
+    dadosForm.nascimento = dadosForm.data_nascimento;
+    delete dadosForm.data_nascimento;
+
+    dadosForm.tipo = dadosForm.tipo_usuario.toUpperCase();
+    delete dadosForm.tipo_usuario;
 
     this.authService.cadastrar(dadosForm).subscribe({
       next: () => {
