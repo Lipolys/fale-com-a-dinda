@@ -118,25 +118,4 @@ export class AuthService {
     const authData = await this.getAuthData();
     return authData ? authData.usuario.idusuario.toString() : null;
   }
-
-  async getUsuarioLogado(): Promise<{ idusuario: number; nome: string; email: string; tipo_usuario: 'cliente' | 'farmaceutico'; clienteId?: number; farmaceuticoId?: number } | null> {
-    const authData = await this.getAuthData();
-    if (!authData) {
-      return null;
-    }
-
-    const usuario = authData.usuario;
-
-    // Se for cliente, buscar o clienteId
-    if (usuario.tipo_usuario === 'cliente') {
-      const cliente = await this.http.get<any>(`${this.API_URL}/cliente/usuario/${usuario.idusuario}`).toPromise();
-      return { ...usuario, clienteId: cliente.idcliente };
-    }
-
-    // Se for farmacêutico, buscar o farmaceuticoId
-    if (usuario.tipo_usuario === 'farmaceutico') {
-      const farmaceutico = await this.http.get<any>(`${this.API_URL}/farmaceutico/usuario/${usuario.idusuario}`).toPromise();
-      return { ...usuario, farmaceuticoId: farmaceutico.idfarmaceutico };
-    }
-  }
 }

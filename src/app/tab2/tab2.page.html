@@ -1,35 +1,147 @@
-<ion-header [translucent]="true">
+<ion-header class="header-dinda">
   <ion-toolbar>
-    <ion-title>
-      Meus Medicamentos
-    </ion-title>
+    <ion-buttons slot="start">
+      <ion-button>
+        <ion-icon slot="icon-only" name="menu"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>💊 Meus Remédios</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="carregarDados()">
+        <ion-icon slot="icon-only" name="refresh"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Meus Medicamentos</ion-title>
-    </ion-toolbar>
-  </ion-header>
 
-  <ion-list>
-    <ion-item-sliding *ngFor="let min of ministracoes">
-      <ion-item>
-        <ion-label>{{ min.nome }}</ion-label>
-        <ion-icon name="create-outline" slot="end" (click)="openEditModal(min)"></ion-icon>
-      </ion-item>
-      <ion-item-options side="end">
-        <ion-item-option color="danger" (click)="deleteMinistracao(min.id)">
-          <ion-icon slot="icon-only" name="trash"></ion-icon>
-        </ion-item-option>
-      </ion-item-options>
-    </ion-item-sliding>
-  </ion-list>
+  <!-- Mensagem quando não há ministracões -->
+  @if (ministracoes.length === 0) {
+    <div class="card-dinda" style="margin-top: 40px; text-align: center;">
+      <ion-icon
+        name="medical"
+        color="medium"
+        style="font-size: 80px; opacity: 0.3;"
+      ></ion-icon>
+      <h2 style="font-size: 24px; font-weight: 600; color: var(--ion-color-medium); margin-top: 20px;">
+        Nenhum remédio cadastrado
+      </h2>
+      <p style="font-size: 18px; color: var(--ion-color-medium); margin-top: 12px;">
+        Toque no botão "+" para adicionar seu primeiro remédio
+      </p>
+    </div>
+  }
 
-  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
-    <ion-fab-button (click)="openAddModal()">
-      <ion-icon name="add"></ion-icon>
-    </ion-fab-button>
-  </ion-fab>
+  <!-- Lista de ministracões -->
+  @if (ministracoes.length > 0) {
+    <h2 class="section-title">📋 Seus Remédios Cadastrados</h2>
+
+    <ion-list>
+      @for (ministracao of ministracoes; track ministracao.uuid) {
+        <ion-item-sliding>
+          <!-- Conteúdo do item -->
+          <ion-item class="list-item-dinda" button (click)="editarMinistracao(ministracao)">
+
+            <!-- Ícone de status -->
+            <ion-icon
+              slot="start"
+              [name]="ministracao.status === 1 ? 'checkmark-circle' : 'close-circle'"
+              [color]="getStatusCor(ministracao.status)"
+              class="icon-large"
+            ></ion-icon>
+
+            <!-- Informações do medicamento -->
+            <ion-label>
+              <h2 style="font-size: 20px; font-weight: 600; color: #333; margin-bottom: 8px;">
+                {{ ministracao.medicamento_nome || 'Medicamento' }}
+              </h2>
+
+              <!-- Horário -->
+              @if (ministracao.horario) {
+                <p style="font-size: 16px; color: #666; margin-bottom: 4px;">
+                  <ion-icon name="time-outline" style="vertical-align: middle;"></ion-icon>
+                  Horário: {{ formatarHorario(ministracao.horario) }}
+                </p>
+              }
+
+              <!-- Dosagem -->
+              @if (ministracao.dosagem) {
+                <p style="font-size: 16px; color: #666; margin-bottom: 4px;">
+                  <ion-icon name="flask-outline" style="vertical-align: middle;"></ion-icon>
+                  Dosagem: {{ ministracao.dosagem }}
+                </p>
+              }
+
+              <!-- Frequência -->
+              @if (ministracao.frequencia) {
+                <p style="font-size: 16px; color: #666; margin-bottom: 4px;">
+                  <ion-icon name="repeat-outline" style="vertical-align: middle;"></ion-icon>
+                  Frequência: {{ ministracao.frequencia }}x por dia
+                </p>
+              }
+
+              <!-- Classe do medicamento -->
+              @if (ministracao.medicamento_classe) {
+                <p style="font-size: 14px; color: #999; margin-top: 8px;">
+                  Classe: {{ ministracao.medicamento_classe }}
+                </p>
+              }
+            </ion-label>
+
+            <!-- Badge de status -->
+            <ion-badge
+              slot="end"
+              [color]="getStatusCor(ministracao.status)"
+              class="badge-dinda"
+            >
+              {{ getStatusTexto(ministracao.status) }}
+            </ion-badge>
+          </ion-item>
+
+          <!-- Opções de deslize -->
+          <ion-item-options side="end">
+            <!-- Botão de editar -->
+            <ion-item-option
+              color="primary"
+              (click)="editarMinistracao(ministracao)"
+            >
+              <ion-icon slot="icon-only" name="create"></ion-icon>
+            </ion-item-option>
+
+            <!-- Botão de remover -->
+            <ion-item-option
+              color="danger"
+              (click)="removerMinistracao(ministracao)"
+            >
+              <ion-icon slot="icon-only" name="trash"></ion-icon>
+            </ion-item-option>
+          </ion-item-options>
+        </ion-item-sliding>
+      }
+    </ion-list>
+  }
+
+  <!-- Informação sobre sincronização (se houver pendentes) -->
+  <div class="card-dinda" style="margin-top: 24px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <ion-icon name="cloud-upload-outline" color="primary" style="font-size: 28px;"></ion-icon>
+      <div>
+        <p style="font-size: 16px; color: #666; margin: 0;">
+          Seus dados são salvos localmente e sincronizados automaticamente quando houver conexão.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Espaçamento para o FAB -->
+  <div style="height: 100px;"></div>
+
 </ion-content>
+
+<!-- Botão flutuante para adicionar -->
+<ion-fab vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab-button (click)="adicionarMedicamento()" color="primary">
+    <ion-icon name="add"></ion-icon>
+  </ion-fab-button>
+</ion-fab>

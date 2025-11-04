@@ -1,164 +1,397 @@
-import { Component } from '@angular/core';
-import { NavController, AlertController, LoadingController } from '@ionic/angular';
-import { MinistraLocal } from '../models/local.models';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { AlertController, LoadingController, ToastController } from '@ionic/angular';
+import { MinistraLocal, MedicamentoLocal } from '../models/local.models';
 import { AuthService } from '../services/auth';
 import { MinistraService } from '../services/ministra';
+import { MedicamentoService } from '../services/medicamento';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-tab2',
   templateUrl: 'tab2.page.html',
-  styleUrls: ['tab2.page.scss']
+  styleUrls: ['tab2.page.scss'],
+  standalone: false,
 })
-export class Tab2Page {
+export class Tab2Page implements OnInit, OnDestroy {
 
-  // Variável para guardar as ministrações carregadas
   public ministracoes: MinistraLocal[] = [];
-
-  // Guardar o ID do cliente para facilitar o uso
-  private clienteId?: number;
+  public medicamentosDisponiveis: MedicamentoLocal[] = [];
+  private clienteUuid: string | null = null;
+  private subscriptions: Subscription[] = [];
 
   constructor(
-    private navCtrl: NavController,
-    private ministraService: MinistraService, // Serviço para CRUD de ministrações
-    private authService: AuthService,         // Serviço para buscar o cliente logado
-    private alertCtrl: AlertController,     // Para criar alertas (ex: confirmar exclusão)
-    private loadingCtrl: LoadingController    // Para mostrar feedback de "a carregar"
+    private ministraService: MinistraService,
+    private medicamentoService: MedicamentoService,
+    private authService: AuthService,
+    private alertCtrl: AlertController,
+    private loadingCtrl: LoadingController,
+    private toastCtrl: ToastController
   ) {}
 
-  /**
-   * Este método é chamado sempre que a página (tab) está prestes a ser exibida.
-   * É ideal para recarregar dados que podem ter mudado.
-   */
-  ionViewWillEnter() {
-    this.carregarMinistracoes();
+  async ngOnInit() {
+    // Obtém o UUID do cliente logado
+    this.clienteUuid = await this.authService.getCurrentUserUuid();
+
+    if (!this.clienteUuid) {
+      await this.mostrarToast('Erro: Usuário não identificado', 'danger');
+      return;
+    }
+
+    // Inscreve-se nos observables para atualização automática
+    const ministraSub = this.ministraService.ministra$.subscribe(
+      ministracoes => {
+        this.ministracoes = ministracoes;
+      }
+    );
+    this.subscriptions.push(ministraSub);
+
+    const medicamentosSub = this.medicamentoService.medicamentos$.subscribe(
+      medicamentos => {
+        this.medicamentosDisponiveis = medicamentos;
+      }
+    );
+    this.subscriptions.push(medicamentosSub);
+
+    // Carrega os dados iniciais
+    await this.carregarDados();
+  }
+
+  ngOnDestroy() {
+    // Cancela todas as inscrições
+    this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
   /**
-   * Carrega a lista de ministrações (remédios) do cliente logado.
+   * Recarrega quando a página entra em foco
    */
-  async carregarMinistracoes() {
-    const loading = await this.loadingCtrl.create({ message: 'A carregar remédios...' });
+  async ionViewWillEnter() {
+    await this.carregarDados();
+  }
+
+  /**
+   * Carrega ministracões e medicamentos disponíveis
+   */
+  public async carregarDados() {
+    const loading = await this.loadingCtrl.create({
+      message: 'Carregando seus remédios...'
+    });
     await loading.present();
 
     try {
-      // 1. Obter o utilizador logado
-      const usuario = await this.authService.getUsuarioLogado();
-      if (!usuario || !usuario.clienteId) {
-        console.error('Utilizador não logado ou não é um cliente.');
-        // Aqui você poderia mostrar um alerta ou redirecionar para o login
-        this.ministracoes = []; // Limpa a lista
-        return;
-      }
+      // Carrega ministracões do cliente
+      await this.ministraService.recarregar();
 
-      this.clienteId = usuario.clienteId;
-
-      // 2. Buscar as ministrações usando o clienteId
-      // O BaseService (que o MinistraService estende) permite passar parâmetros
-      // que serão usados na query do backend (ex: /api/ministracoes?clienteId=123)
-      // O seu backend já suporta isto na rota /cliente/:id, mas o BaseService
-      // provavelmente está configurado para query params. Vamos assumir que
-      // o BaseService pode lidar com { clienteId: X }
-      // Se o seu BaseService não suportar query params, teríamos que ajustar o ministra.ts
-      // para ter um método específico como `listarPorCliente(clienteId: number)`.
-
-      // Assumindo que o backend em ministraControlador.js
-      // na função `listarPorCliente` é chamado pela rota correta.
-      // O seu ministraRotas.js usa:
-      // router.get('/cliente/:id', ...).
-      // O BaseService padrão pode não usar esta rota.
-      // Vamos ajustar o ministra.ts (PASSO 2.1)
-
-      // *** APÓS AJUSTE NO PASSO 2.1 ***
-      // Agora podemos chamar o método customizado:
-
-      // Ordenar por data (opcional, mas recomendado)
-      this.ministracoes.sort((a, b) => new Date(b.dataHora).getTime() - new Date(a.dataHora).getTime());
+      // Carrega medicamentos disponíveis (para adicionar novos)
+      await this.medicamentoService.recarregar();
 
     } catch (error) {
-      console.error('Erro ao carregar ministrações:', error);
-      const alert = await this.alertCtrl.create({
-        header: 'Erro',
-        message: 'Não foi possível carregar a lista de remédios. Tente novamente.',
-        buttons: ['OK']
-      });
-      await alert.present();
+      console.error('Erro ao carregar dados:', error);
+      await this.mostrarToast('Erro ao carregar dados', 'danger');
     } finally {
       await loading.dismiss();
     }
   }
 
   /**
-   * Navega para a página de formulário para criar uma nova ministração.
+   * Abre modal para adicionar novo medicamento
    */
-  incluir() {
-    if (!this.clienteId) {
-      console.error('Não é possível incluir: clienteId não definido.');
+  async adicionarMedicamento() {
+    if (this.medicamentosDisponiveis.length === 0) {
+      await this.mostrarToast(
+        'Nenhum medicamento disponível. Peça ao farmacêutico para cadastrar.',
+        'warning'
+      );
       return;
     }
-    // Navega para a página /ministracao (que deve ser o seu formulário)
-    // Passamos o clienteId via queryParams para que o formulário saiba
-    // a quem associar a nova ministração.
-    this.navCtrl.navigateForward('/ministracao', {
-      queryParams: { clienteId: this.clienteId }
+
+    // Cria inputs para o formulário
+    const inputs: any[] = [
+      {
+        name: 'medicamento_uuid',
+        type: 'radio',
+        label: 'Selecione o medicamento',
+        value: null
+      }
+    ];
+
+    // Adiciona cada medicamento como opção
+    this.medicamentosDisponiveis.forEach(med => {
+      inputs.push({
+        name: 'medicamento_uuid',
+        type: 'radio',
+        label: `${med.nome} - ${med.classe}`,
+        value: med.uuid
+      });
     });
-  }
 
-  /**
-   * Navega para a página de formulário para editar uma ministração existente.
-   * @param ministracao O objeto Ministracao a ser editado.
-   */
-  editar(ministracao: Ministracao) {
-    // Navega para a página /ministracao, passando o ID da ministração
-    // como parâmetro de rota. A página /ministracao (formulário)
-    // deve ser capaz de ler este ID para carregar os dados.
-    this.navCtrl.navigateForward(`/ministracao/${ministracao.id}`);
-  }
+    // Adiciona campos adicionais
+    inputs.push(
+      {
+        name: 'horario',
+        type: 'time',
+        placeholder: 'Horário (ex: 08:00)'
+      },
+      {
+        name: 'dosagem',
+        type: 'text',
+        placeholder: 'Dosagem (ex: 1 comprimido)'
+      },
+      {
+        name: 'frequencia',
+        type: 'number',
+        placeholder: 'Frequência (vezes por dia)',
+        min: 1,
+        max: 10
+      }
+    );
 
-  /**
-   * Exclui uma ministração após confirmação.
-   * @param ministracao O objeto Ministracao a ser excluído.
-   */
-  async excluir(ministracao: Ministracao) {
     const alert = await this.alertCtrl.create({
-      header: 'Confirmar Exclusão',
-      message: `Tem certeza que deseja excluir a ministração de "${ministracao.nomeMedicamento}"?`,
+      header: '➕ Adicionar Remédio',
+      cssClass: 'modal-dinda',
+      inputs: inputs,
       buttons: [
         {
           text: 'Cancelar',
           role: 'cancel',
-          cssClass: 'secondary'
+          cssClass: 'alert-button-cancel'
         },
         {
-          text: 'Excluir',
-          cssClass: 'danger',
-          handler: async () => {
-            const loading = await this.loadingCtrl.create({ message: 'A excluir...' });
-            await loading.present();
-            try {
-              // 1. Chamar o serviço para apagar
-              await this.ministraService.deletar(ministracao.id);
-
-              // 2. Recarregar a lista (ou remover localmente para performance)
-              // this.ministracoes = this.ministracoes.filter(m => m.id !== ministracao.id);
-              // É mais seguro recarregar do servidor:
-              await this.carregarMinistracoes();
-
-            } catch (error) {
-              console.error('Erro ao excluir ministração:', error);
-              const errorAlert = await this.alertCtrl.create({
-                header: 'Erro',
-                message: 'Não foi possível excluir. Tente novamente.',
-                buttons: ['OK']
-              });
-              await errorAlert.present();
-            } finally {
-              await loading.dismiss();
+          text: 'Adicionar',
+          cssClass: 'alert-button-confirm',
+          handler: async (data) => {
+            if (!data.medicamento_uuid) {
+              await this.mostrarToast('Selecione um medicamento', 'warning');
+              return false;
             }
+
+            await this.salvarMinistracao(data);
+            return true;
           }
         }
       ]
     });
 
     await alert.present();
+  }
+
+  /**
+   * Salva nova ministração
+   */
+  private async salvarMinistracao(dados: any) {
+    const loading = await this.loadingCtrl.create({
+      message: 'Salvando...'
+    });
+    await loading.present();
+
+    try {
+      if (!this.clienteUuid) {
+        throw new Error('Cliente UUID não encontrado');
+      }
+
+      await this.ministraService.criar(
+        {
+          medicamento_uuid: dados.medicamento_uuid,
+          horario: dados.horario || null,
+          dosagem: dados.dosagem || null,
+          frequencia: dados.frequencia ? parseInt(dados.frequencia) : undefined,
+          status: 1 // Ativo por padrão
+        },
+        this.clienteUuid
+      );
+
+      await this.mostrarToast('Remédio adicionado com sucesso! ✅', 'success');
+
+    } catch (error: any) {
+      console.error('Erro ao adicionar:', error);
+      await this.mostrarToast(
+        error.message || 'Erro ao adicionar remédio',
+        'danger'
+      );
+    } finally {
+      await loading.dismiss();
+    }
+  }
+
+  /**
+   * Edita uma ministração existente
+   */
+  async editarMinistracao(ministracao: MinistraLocal) {
+    const alert = await this.alertCtrl.create({
+      header: `✏️ Editar ${ministracao.medicamento_nome || 'Remédio'}`,
+      cssClass: 'modal-dinda',
+      inputs: [
+        {
+          name: 'horario',
+          type: 'time',
+          value: ministracao.horario || '',
+          placeholder: 'Horário'
+        },
+        {
+          name: 'dosagem',
+          type: 'text',
+          value: ministracao.dosagem || '',
+          placeholder: 'Dosagem'
+        },
+        {
+          name: 'frequencia',
+          type: 'number',
+          value: ministracao.frequencia || '',
+          placeholder: 'Frequência (vezes por dia)',
+          min: 1,
+          max: 10
+        },
+        {
+          name: 'status',
+          type: 'radio',
+          label: 'Ativo',
+          value: 1,
+          checked: ministracao.status === 1
+        },
+        {
+          name: 'status',
+          type: 'radio',
+          label: 'Inativo',
+          value: 0,
+          checked: ministracao.status === 0
+        }
+      ],
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel',
+          cssClass: 'alert-button-cancel'
+        },
+        {
+          text: 'Salvar',
+          cssClass: 'alert-button-confirm',
+          handler: async (data) => {
+            await this.atualizarMinistracao(ministracao.uuid, data);
+            return true;
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  /**
+   * Atualiza ministração no serviço
+   */
+  private async atualizarMinistracao(uuid: string, dados: any) {
+    const loading = await this.loadingCtrl.create({
+      message: 'Atualizando...'
+    });
+    await loading.present();
+
+    try {
+      await this.ministraService.editar(uuid, {
+        horario: dados.horario || null,
+        dosagem: dados.dosagem || null,
+        frequencia: dados.frequencia ? parseInt(dados.frequencia) : undefined,
+        status: parseInt(dados.status)
+      });
+
+      await this.mostrarToast('Remédio atualizado com sucesso! ✅', 'success');
+
+    } catch (error: any) {
+      console.error('Erro ao atualizar:', error);
+      await this.mostrarToast(
+        error.message || 'Erro ao atualizar remédio',
+        'danger'
+      );
+    } finally {
+      await loading.dismiss();
+    }
+  }
+
+  /**
+   * Remove uma ministração após confirmação
+   */
+  async removerMinistracao(ministracao: MinistraLocal) {
+    const alert = await this.alertCtrl.create({
+      header: 'Confirmar Remoção',
+      message: `Tem certeza que deseja remover "${ministracao.medicamento_nome || 'este remédio'}" da sua lista?`,
+      cssClass: 'modal-dinda',
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel',
+          cssClass: 'alert-button-cancel'
+        },
+        {
+          text: 'Remover',
+          cssClass: 'alert-button-danger',
+          handler: async () => {
+            await this.confirmarRemocao(ministracao.uuid);
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  /**
+   * Confirma e executa a remoção
+   */
+  private async confirmarRemocao(uuid: string) {
+    const loading = await this.loadingCtrl.create({
+      message: 'Removendo...'
+    });
+    await loading.present();
+
+    try {
+      await this.ministraService.deletar(uuid);
+      await this.mostrarToast('Remédio removido com sucesso! 🗑️', 'success');
+
+    } catch (error: any) {
+      console.error('Erro ao remover:', error);
+      await this.mostrarToast(
+        error.message || 'Erro ao remover remédio',
+        'danger'
+      );
+    } finally {
+      await loading.dismiss();
+    }
+  }
+
+  /**
+   * Formata horário para exibição
+   */
+  formatarHorario(horario: string | null): string {
+    if (!horario) return 'Não definido';
+    return horario;
+  }
+
+  /**
+   * Formata status para exibição
+   */
+  getStatusTexto(status: number): string {
+    return status === 1 ? 'Ativo' : 'Inativo';
+  }
+
+  /**
+   * Retorna cor do status
+   */
+  getStatusCor(status: number): string {
+    return status === 1 ? 'success' : 'medium';
+  }
+
+  /**
+   * Mostra toast de feedback
+   */
+  private async mostrarToast(
+    mensagem: string,
+    cor: 'success' | 'danger' | 'warning'
+  ) {
+    const toast = await this.toastCtrl.create({
+      message: mensagem,
+      duration: 3000,
+      position: 'top',
+      color: cor,
+      cssClass: 'toast-dinda'
+    });
+    await toast.present();
   }
 }
