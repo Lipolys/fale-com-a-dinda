@@ -28,18 +28,33 @@ export class Tab2Page implements OnInit, OnDestroy {
     private toastCtrl: ToastController
   ) {}
 
-  ngOnInit() {
+  async ngOnInit() {
     const authSub = this.authService.isAuthenticated$.subscribe(async isAuthenticated => {
       if (isAuthenticated) {
+        // Aguarda o UUID estar disponível
         this.clienteUuid = await this.authService.getCurrentUserUuid();
+
+        // Retry caso o UUID não esteja disponível imediatamente
+        let retries = 0;
+        while (!this.clienteUuid && retries < 5) {
+          await this.delay(200); // Aguarda 200ms
+          this.clienteUuid = await this.authService.getCurrentUserUuid();
+          retries++;
+        }
+
         if (!this.clienteUuid) {
-          await this.mostrarToast('Erro: Usuário não identificado', 'danger');
+          console.error('[Tab2Page] UUID do usuário não disponível após retries');
+          await this.mostrarToast('Erro: Sessão não inicializada. Tente fazer login novamente.', 'warning');
           return;
         }
 
+        console.log('[Tab2Page] Cliente UUID obtido:', this.clienteUuid);
+
+        // Configura as subscrições apenas uma vez
         if (this.subscriptions.length <= 1) {
           const ministraSub = this.ministraService.ministra$.subscribe(
             ministracoes => {
+              console.log('[Tab2Page] Ministrações recebidas:', ministracoes.length);
               this.ministracoes = ministracoes;
             }
           );
@@ -47,14 +62,15 @@ export class Tab2Page implements OnInit, OnDestroy {
 
           const medicamentosSub = this.medicamentoService.medicamentos$.subscribe(
             medicamentos => {
-              // DEBUG: Log para ver quando os medicamentos chegam e quais são
-              console.log('[Tab2Page] Medicamentos recebidos da subscrição:', medicamentos);
+              console.log('[Tab2Page] Medicamentos recebidos:', medicamentos.length);
               this.medicamentosDisponiveis = medicamentos;
             }
           );
           this.subscriptions.push(medicamentosSub);
         }
 
+        // Aguarda um pouco para a sincronização completar
+        await this.delay(500);
         await this.carregarDados();
 
       } else {
@@ -64,6 +80,10 @@ export class Tab2Page implements OnInit, OnDestroy {
       }
     });
     this.subscriptions.push(authSub);
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   ngOnDestroy() {

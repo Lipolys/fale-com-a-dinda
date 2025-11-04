@@ -329,14 +329,16 @@ export class MedicamentoService {
    * (Chamado pelo SyncService após download)
    */
   public async mesclarDoServidor(medicamentosServidor: any[] | undefined): Promise<void> {
-    const locais = await this.storage.getCollection<MedicamentoLocal>(
-      STORAGE_KEYS.MEDICAMENTOS
-    );
-
     if (!medicamentosServidor || medicamentosServidor.length === 0) {
       console.log('ℹ️ Nenhum medicamento recebido do servidor para mesclar');
       return;
     }
+
+    console.log(`📥 Iniciando mesclagem de ${medicamentosServidor.length} medicamentos do servidor`);
+
+    const locais = await this.storage.getCollection<MedicamentoLocal>(
+      STORAGE_KEYS.MEDICAMENTOS
+    );
 
     for (const apiMed of medicamentosServidor) {
       // Procura se já existe localmente (por serverId)
@@ -345,52 +347,48 @@ export class MedicamentoService {
       );
 
       if (existente) {
-        // Já existe localmente
-        // Verifica se servidor é mais recente
-        const serverTime = new Date(apiMed.updatedAt).getTime();
+        // Já existe localmente - verifica se servidor é mais recente
+        const serverTime = new Date(apiMed.updatedAt || apiMed.createdAt).getTime();
         const localTime = new Date(existente.updatedAt).getTime();
 
         if (serverTime > localTime && existente.syncStatus === SyncStatus.SYNCED) {
-          // Servidor mais recente e local não tem mudanças pendentes
           const atualizado: MedicamentoLocal = {
             ...existente,
             nome: apiMed.nome,
             descricao: apiMed.descricao,
             classe: apiMed.classe,
-            serverUpdatedAt: apiMed.updatedAt,
+            serverUpdatedAt: apiMed.updatedAt || apiMed.createdAt,
             syncedAt: now()
           };
 
           locais[existente.uuid] = atualizado;
+          console.log(`📝 Medicamento ${existente.uuid} atualizado do servidor`);
         }
-        // Se local tem mudanças pendentes, mantém local (será enviado depois)
-
       } else {
-        // Não existe localmente, adiciona
+        // Não existe localmente - adiciona
         const novoLocal: MedicamentoLocal = {
           ...createBaseModel(generateUUID(), SyncStatus.SYNCED),
           serverId: apiMed.idmedicamento,
           nome: apiMed.nome,
           descricao: apiMed.descricao,
           classe: apiMed.classe,
-          farmaceutico_uuid: generateUUID(), // Gera UUID temporário
-          serverUpdatedAt: apiMed.updatedAt,
+          farmaceutico_uuid: generateUUID(),
+          serverUpdatedAt: apiMed.updatedAt || apiMed.createdAt,
           syncedAt: now(),
-
-          // Dados desnormalizados se disponíveis
           farmaceutico_nome: apiMed.farmaceutico?.usuario?.nome,
           farmaceutico_crf: apiMed.farmaceutico?.crf
         };
 
         locais[novoLocal.uuid] = novoLocal;
+        console.log(`➕ Novo medicamento ${novoLocal.uuid} adicionado: ${novoLocal.nome}`);
       }
     }
 
-    // Salva coleção atualizada
+    // Salva e notifica
     await this.storage.setCollection(STORAGE_KEYS.MEDICAMENTOS, locais);
-    await this.carregarMedicamentos();
+    await this.carregarMedicamentos(); // Força reload
 
-    console.log(`✅ Mesclados ${medicamentosServidor.length} medicamentos do servidor`);
+    console.log(`✅ Mesclagem concluída. Total local: ${Object.keys(locais).length} medicamentos`);
   }
 
   // ==================== UTILITÁRIOS ====================

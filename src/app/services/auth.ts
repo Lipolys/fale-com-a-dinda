@@ -5,6 +5,7 @@ import { tap, switchMap, catchError, filter, map } from 'rxjs/operators';
 import { StorageService, STORAGE_KEYS } from './storage';
 import { environment } from '../../environments/environment';
 import { Router } from '@angular/router';
+import { normalizeAuthResponse } from '../models/backendAuthResponse';
 
 export interface AuthData {
   token: string;
@@ -12,7 +13,7 @@ export interface AuthData {
     idusuario: number;
     nome: string;
     email: string;
-    tipo_usuario: 'cliente' | 'farmaceutico';
+    tipo_usuario: 'CLIENTE' | 'FARMACEUTICO';
   };
 }
 
@@ -62,14 +63,27 @@ export class AuthService {
    * Tenta fazer o login no backend
    */
   login(email: string, senha: string): Observable<AuthData> {
-    return this.http.post<AuthData>(`${this.API_URL}/usuario/login`, { email, senha })
+    return this.http.post<any>(`${this.API_URL}/usuario/login`, { email, senha })
       .pipe(
-        switchMap(response => {
-          return from(this.storage.set(STORAGE_KEYS.AUTH_DATA, response)).pipe(
-            tap(() => {
+        switchMap(backendResponse => {
+          console.log('[AuthService] Resposta bruta do backend:', backendResponse);
+
+          // Normaliza a resposta
+          const authData = normalizeAuthResponse(backendResponse);
+          console.log('[AuthService] Dados normalizados:', authData);
+          console.log('[AuthService] Salvando no storage...');
+
+          return from(this.storage.set(STORAGE_KEYS.AUTH_DATA, authData)).pipe(
+            tap(async () => {
+              console.log('[AuthService] Dados salvos com sucesso');
+
+              // Verificação imediata
+              const verificacao = await this.storage.get(STORAGE_KEYS.AUTH_DATA);
+              console.log('[AuthService] Verificação imediata:', verificacao);
+
               this.authState.next(true);
             }),
-            map(() => response)
+            map(() => authData)
           );
         }),
         catchError(err => {
@@ -115,9 +129,15 @@ export class AuthService {
 
   async getCurrentUserUuid(): Promise<string | null> {
     const authData = await this.getAuthData();
+    console.log('[AuthService] getAuthData retornou:', authData);
+
     if (authData && authData.usuario && authData.usuario.idusuario) {
-        return authData.usuario.idusuario.toString();
+      const uuid = authData.usuario.idusuario.toString();
+      console.log('[AuthService] UUID do usuário:', uuid);
+      return uuid;
     }
+
+    console.warn('[AuthService] AuthData inválido ou incompleto:', authData);
     return null;
   }
 }
