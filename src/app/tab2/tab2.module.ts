@@ -6,7 +6,7 @@ import { Tab2Page } from './tab2.page';
 import { ExploreContainerComponentModule } from '../explore-container/explore-container.module';
 
 import { Tab2PageRoutingModule } from './tab2-routing.module';
-import { MedicamentoPageModule } from '../medicamento/medicamento.module';
+import { MinistracaoPageModule } from '../ministracao/ministracao.module';
 
 @NgModule({
   imports: [
@@ -15,7 +15,7 @@ import { MedicamentoPageModule } from '../medicamento/medicamento.module';
     FormsModule,
     ExploreContainerComponentModule,
     Tab2PageRoutingModule,
-    MedicamentoPageModule
+    MinistracaoPageModule
   ],
   declarations: [Tab2Page]
 })

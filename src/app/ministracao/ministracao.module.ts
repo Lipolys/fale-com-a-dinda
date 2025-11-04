@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { IonicModule } from '@ionic/angular';
 
-import { MedicamentoPage } from './medicamento.page';
+import { MinistracaoPage } from './ministracao.page';
 
 @NgModule({
   imports: [
@@ -12,6 +12,6 @@ import { MedicamentoPage } from './medicamento.page';
     FormsModule,
     IonicModule,
   ],
-  declarations: [MedicamentoPage]
+  declarations: [MinistracaoPage]
 })
-export class MedicamentoPageModule {}
+export class MinistracaoPageModule {}

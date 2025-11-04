@@ -1,0 +1,17 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>{{ isEdit ? 'Editar' : 'Adicionar' }} Medicamento</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="dismissModal()">Fechar</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-item>
+    <ion-label position="floating">Nome do Medicamento</ion-label>
+    <ion-input [(ngModel)]="medicamento.nome"></ion-input>
+  </ion-item>
+
+  <ion-button expand="full" (click)="save()">Salvar</ion-button>
+</ion-content>

@@ -113,4 +113,9 @@ export class AuthService {
   async getAuthData(): Promise<AuthData | null> {
     return await this.storage.get<AuthData>(STORAGE_KEYS.AUTH_DATA);
   }
+
+  async getCurrentUserUuid(): Promise<string | null> {
+    const authData = await this.getAuthData();
+    return authData ? authData.usuario.idusuario.toString() : null;
+  }
 }

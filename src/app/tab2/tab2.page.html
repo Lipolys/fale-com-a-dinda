@@ -14,13 +14,13 @@
   </ion-header>
 
   <ion-list>
-    <ion-item-sliding *ngFor="let med of medicamentos">
+    <ion-item-sliding *ngFor="let min of ministracoes">
       <ion-item>
-        <ion-label>{{ med.nome }}</ion-label>
-        <ion-icon name="create-outline" slot="end" (click)="openEditModal(med)"></ion-icon>
+        <ion-label>{{ min.nome }}</ion-label>
+        <ion-icon name="create-outline" slot="end" (click)="openEditModal(min)"></ion-icon>
       </ion-item>
       <ion-item-options side="end">
-        <ion-item-option color="danger" (click)="deleteMedicamento(med.id)">
+        <ion-item-option color="danger" (click)="deleteMinistracao(min.id)">
           <ion-icon slot="icon-only" name="trash"></ion-icon>
         </ion-item-option>
       </ion-item-options>

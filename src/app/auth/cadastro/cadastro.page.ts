@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LoadingController, ToastController } from '@ionic/angular';
-import { AuthService } from '../../servicos/auth';
+import { AuthService } from '../../services/auth';
 
 // Função Validadora Customizada
 export const senhasConferemValidator: ValidatorFn = (
