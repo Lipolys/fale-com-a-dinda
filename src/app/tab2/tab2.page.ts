@@ -1,9 +1,11 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { AlertController, LoadingController, ToastController } from '@ionic/angular';
+import { AlertController, LoadingController, ToastController, ModalController } from '@ionic/angular';
 import { MinistraLocal, MedicamentoLocal } from '../models/local.models';
 import { AuthService } from '../services/auth';
 import { MinistraService } from '../services/ministra';
 import { MedicamentoService } from '../services/medicamento';
+import { SyncService } from '../services/sync';
+import { MinistracaoPage } from '../ministracao/ministracao.page';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -18,105 +20,109 @@ export class Tab2Page implements OnInit, OnDestroy {
   public medicamentosDisponiveis: MedicamentoLocal[] = [];
   private clienteUuid: string | null = null;
   private subscriptions: Subscription[] = [];
+  private isInitialized = false;
 
   constructor(
     private ministraService: MinistraService,
     private medicamentoService: MedicamentoService,
     private authService: AuthService,
+    private syncService: SyncService,
     private alertCtrl: AlertController,
     private loadingCtrl: LoadingController,
-    private toastCtrl: ToastController
+    private toastCtrl: ToastController,
+    private modalCtrl: ModalController
   ) {}
 
   async ngOnInit() {
+    // Configura subscrições aos observables (apenas uma vez)
+    this.setupSubscriptions();
+  }
+
+  /**
+   * Configura as subscrições aos observables dos serviços
+   * Os dados são atualizados automaticamente quando mudam
+   */
+  private setupSubscriptions(): void {
+    // Subscreve ao estado de autenticação
     const authSub = this.authService.isAuthenticated$.subscribe(async isAuthenticated => {
-      if (isAuthenticated) {
-        // Aguarda o UUID estar disponível
-        this.clienteUuid = await this.authService.getCurrentUserUuid();
-
-        // Retry caso o UUID não esteja disponível imediatamente
-        let retries = 0;
-        while (!this.clienteUuid && retries < 5) {
-          await this.delay(200); // Aguarda 200ms
-          this.clienteUuid = await this.authService.getCurrentUserUuid();
-          retries++;
-        }
-
-        if (!this.clienteUuid) {
-          console.error('[Tab2Page] UUID do usuário não disponível após retries');
-          await this.mostrarToast('Erro: Sessão não inicializada. Tente fazer login novamente.', 'warning');
-          return;
-        }
-
-        console.log('[Tab2Page] Cliente UUID obtido:', this.clienteUuid);
-
-        // Configura as subscrições apenas uma vez
-        if (this.subscriptions.length <= 1) {
-          const ministraSub = this.ministraService.ministra$.subscribe(
-            ministracoes => {
-              console.log('[Tab2Page] Ministrações recebidas:', ministracoes.length);
-              this.ministracoes = ministracoes;
-            }
-          );
-          this.subscriptions.push(ministraSub);
-
-          const medicamentosSub = this.medicamentoService.medicamentos$.subscribe(
-            medicamentos => {
-              console.log('[Tab2Page] Medicamentos recebidos:', medicamentos.length);
-              this.medicamentosDisponiveis = medicamentos;
-            }
-          );
-          this.subscriptions.push(medicamentosSub);
-        }
-
-        // Aguarda um pouco para a sincronização completar
-        await this.delay(500);
-        await this.carregarDados();
-
-      } else {
-        this.ministracoes = [];
-        this.medicamentosDisponiveis = [];
-        this.clienteUuid = null;
+      if (isAuthenticated && !this.isInitialized) {
+        await this.inicializarDados();
+      } else if (!isAuthenticated) {
+        this.limparDados();
       }
     });
     this.subscriptions.push(authSub);
+
+    // Subscreve às ministrações (atualização automática)
+    const ministraSub = this.ministraService.ministra$.subscribe(
+      ministracoes => {
+        this.ministracoes = ministracoes;
+      }
+    );
+    this.subscriptions.push(ministraSub);
+
+    // Subscreve aos medicamentos (atualização automática)
+    const medicamentosSub = this.medicamentoService.medicamentos$.subscribe(
+      medicamentos => {
+        this.medicamentosDisponiveis = medicamentos;
+      }
+    );
+    this.subscriptions.push(medicamentosSub);
   }
 
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+  /**
+   * Inicializa dados do usuário (apenas uma vez)
+   */
+  private async inicializarDados(): Promise<void> {
+    this.clienteUuid = await this.authService.getCurrentUserUuid();
+
+    if (!this.clienteUuid) {
+      console.error('[Tab2Page] UUID do usuário não disponível');
+      await this.mostrarToast('Erro ao carregar sessão. Tente fazer login novamente.', 'warning');
+      return;
+    }
+
+    this.isInitialized = true;
+    // Não precisa chamar carregarDados() - os observables já trazem os dados
+  }
+
+  /**
+   * Limpa dados ao deslogar
+   */
+  private limparDados(): void {
+    this.ministracoes = [];
+    this.medicamentosDisponiveis = [];
+    this.clienteUuid = null;
+    this.isInitialized = false;
   }
 
   ngOnDestroy() {
     this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
-  async ionViewWillEnter() {
-    if (this.clienteUuid) {
-      await this.carregarDados();
-    }
-  }
-
-  public async carregarDados() {
-    const loading = await this.loadingCtrl.create({
-      message: 'Carregando seus remédios...'
-    });
-    await loading.present();
-
+  /**
+   * Força sincronização manual (Pull-to-refresh ou botão)
+   */
+  async syncManual(event?: any) {
     try {
-      await this.ministraService.recarregar();
-      await this.medicamentoService.recarregar();
+      await this.syncService.forceSyncNow();
+      if (!event) {
+        await this.mostrarToast('Dados sincronizados! ✅', 'success');
+      }
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      await this.mostrarToast('Erro ao carregar dados', 'danger');
+      console.error('Erro ao sincronizar:', error);
+      if (!event) {
+        await this.mostrarToast('Erro ao sincronizar dados', 'danger');
+      }
     } finally {
-      await loading.dismiss();
+      // Completa o pull-to-refresh se houver
+      if (event) {
+        event.target.complete();
+      }
     }
   }
 
   async adicionarMedicamento() {
-    // DEBUG: Log para ver o estado dos medicamentos no momento do clique
-    console.log('[Tab2Page] Tentando adicionar. Medicamentos disponíveis no momento:', this.medicamentosDisponiveis);
-
     if (this.medicamentosDisponiveis.length === 0) {
       await this.mostrarToast(
         'Nenhum medicamento disponível. Peça ao farmacêutico para cadastrar.',
@@ -125,70 +131,28 @@ export class Tab2Page implements OnInit, OnDestroy {
       return;
     }
 
-    const inputs: any[] = [
-      {
-        name: 'medicamento_uuid',
-        type: 'radio',
-        label: 'Selecione o medicamento',
-        value: null
-      }
-    ];
+    if (!this.clienteUuid) {
+      await this.mostrarToast('Erro: Sessão não inicializada', 'danger');
+      return;
+    }
 
-    this.medicamentosDisponiveis.forEach(med => {
-      inputs.push({
-        name: 'medicamento_uuid',
-        type: 'radio',
-        label: `${med.nome} - ${med.classe}`,
-        value: med.uuid
-      });
+    const modal = await this.modalCtrl.create({
+      component: MinistracaoPage,
+      componentProps: {
+        clienteUuid: this.clienteUuid
+      },
+      breakpoints: [0, 0.5, 0.75, 0.95],
+      initialBreakpoint: 0.95,
+      cssClass: 'modal-fullscreen'
     });
 
-    inputs.push(
-      {
-        name: 'horario',
-        type: 'time',
-        placeholder: 'Horário (ex: 08:00)'
-      },
-      {
-        name: 'dosagem',
-        type: 'text',
-        placeholder: 'Dosagem (ex: 1 comprimido)'
-      },
-      {
-        name: 'frequencia',
-        type: 'number',
-        placeholder: 'Frequência (vezes por dia)',
-        min: 1,
-        max: 10
-      }
-    );
+    await modal.present();
 
-    const alert = await this.alertCtrl.create({
-      header: '➕ Adicionar Remédio',
-      cssClass: 'modal-dinda',
-      inputs: inputs,
-      buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel',
-          cssClass: 'alert-button-cancel'
-        },
-        {
-          text: 'Adicionar',
-          cssClass: 'alert-button-confirm',
-          handler: async (data) => {
-            if (!data.medicamento_uuid) {
-              await this.mostrarToast('Selecione um medicamento', 'warning');
-              return false;
-            }
-            await this.salvarMinistracao(data);
-            return true;
-          }
-        }
-      ]
-    });
+    const { data, role } = await modal.onWillDismiss();
 
-    await alert.present();
+    if (role === 'confirm' && data) {
+      await this.salvarMinistracao(data);
+    }
   }
 
   private async salvarMinistracao(dados: any) {
@@ -227,63 +191,29 @@ export class Tab2Page implements OnInit, OnDestroy {
   }
 
   async editarMinistracao(ministracao: MinistraLocal) {
-    const alert = await this.alertCtrl.create({
-      header: `✏️ Editar ${ministracao.medicamento_nome || 'Remédio'}`,
-      cssClass: 'modal-dinda',
-      inputs: [
-        {
-          name: 'horario',
-          type: 'time',
-          value: ministracao.horario || '',
-          placeholder: 'Horário'
-        },
-        {
-          name: 'dosagem',
-          type: 'text',
-          value: ministracao.dosagem || '',
-          placeholder: 'Dosagem'
-        },
-        {
-          name: 'frequencia',
-          type: 'number',
-          value: ministracao.frequencia || '',
-          placeholder: 'Frequência (vezes por dia)',
-          min: 1,
-          max: 10
-        },
-        {
-          name: 'status',
-          type: 'radio',
-          label: 'Ativo',
-          value: 1,
-          checked: ministracao.status === 1
-        },
-        {
-          name: 'status',
-          type: 'radio',
-          label: 'Inativo',
-          value: 0,
-          checked: ministracao.status === 0
-        }
-      ],
-      buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel',
-          cssClass: 'alert-button-cancel'
-        },
-        {
-          text: 'Salvar',
-          cssClass: 'alert-button-confirm',
-          handler: async (data) => {
-            await this.atualizarMinistracao(ministracao.uuid, data);
-            return true;
-          }
-        }
-      ]
+    if (!this.clienteUuid) {
+      await this.mostrarToast('Erro: Sessão não inicializada', 'danger');
+      return;
+    }
+
+    const modal = await this.modalCtrl.create({
+      component: MinistracaoPage,
+      componentProps: {
+        ministracao: ministracao,
+        clienteUuid: this.clienteUuid
+      },
+      breakpoints: [0, 0.5, 0.75, 0.95],
+      initialBreakpoint: 0.95,
+      cssClass: 'modal-fullscreen'
     });
 
-    await alert.present();
+    await modal.present();
+
+    const { data, role } = await modal.onWillDismiss();
+
+    if (role === 'confirm' && data) {
+      await this.atualizarMinistracao(ministracao.uuid, data);
+    }
   }
 
   private async atualizarMinistracao(uuid: string, dados: any) {

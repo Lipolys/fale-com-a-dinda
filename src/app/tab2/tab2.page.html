@@ -7,14 +7,24 @@
     </ion-buttons>
     <ion-title>💊 Meus Remédios</ion-title>
     <ion-buttons slot="end">
-      <ion-button (click)="carregarDados()">
-        <ion-icon slot="icon-only" name="refresh"></ion-icon>
+      <ion-button (click)="syncManual()">
+        <ion-icon slot="icon-only" name="sync-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
+
+  <!-- Pull-to-refresh -->
+  <ion-refresher slot="fixed" (ionRefresh)="syncManual($event)">
+    <ion-refresher-content
+      pullingIcon="arrow-down"
+      pullingText="Puxe para atualizar"
+      refreshingSpinner="circles"
+      refreshingText="Sincronizando...">
+    </ion-refresher-content>
+  </ion-refresher>
 
   <!-- Mensagem quando não há ministracões -->
   @if (ministracoes.length === 0) {

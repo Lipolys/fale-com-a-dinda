@@ -42,7 +42,7 @@ export class MinistraService {
    */
   private async carregarMinistra(): Promise<void> {
     const ministra = await this.storage.getCollectionAsArray<MinistraLocal>(
-      STORAGE_KEYS.MINISTRA //
+      STORAGE_KEYS.MINISTRA
     );
 
     // Filtrar deletados localmente
@@ -53,7 +53,6 @@ export class MinistraService {
 
     // Por enquanto, carregando todos (ajuste quando tiver o auth)
     this.ministraSubject.next(ativos);
-    console.log(`Carregados ${ativos.length} registros de ministração`);
   }
 
   /**
@@ -112,7 +111,6 @@ export class MinistraService {
     // 4. Atualiza Observable
     await this.carregarMinistra();
 
-    console.log(`✅ Ministração criada localmente: ${ministra.uuid}`);
     return ministra;
   }
 

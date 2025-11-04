@@ -5,17 +5,7 @@ import { tap, switchMap, catchError, filter, map } from 'rxjs/operators';
 import { StorageService, STORAGE_KEYS } from './storage';
 import { environment } from '../../environments/environment';
 import { Router } from '@angular/router';
-import { normalizeAuthResponse } from '../models/backendAuthResponse';
-
-export interface AuthData {
-  token: string;
-  usuario: {
-    idusuario: number;
-    nome: string;
-    email: string;
-    tipo_usuario: 'CLIENTE' | 'FARMACEUTICO';
-  };
-}
+import { AuthData, BackendLoginResponse, adaptBackendAuthResponse } from '../models/auth.model';
 
 @Injectable({
   providedIn: 'root'
@@ -48,11 +38,7 @@ export class AuthService {
   async verificarAutenticacaoInicial(): Promise<void> {
     try {
       const authData = await this.storage.get<AuthData>(STORAGE_KEYS.AUTH_DATA);
-      if (authData && authData.token) {
-        this.authState.next(true);
-      } else {
-        this.authState.next(false);
-      }
+      this.authState.next(!!authData?.token);
     } catch (error) {
       console.error('Erro ao verificar autenticação inicial:', error);
       this.authState.next(false);
@@ -63,26 +49,12 @@ export class AuthService {
    * Tenta fazer o login no backend
    */
   login(email: string, senha: string): Observable<AuthData> {
-    return this.http.post<any>(`${this.API_URL}/usuario/login`, { email, senha })
+    return this.http.post<BackendLoginResponse>(`${this.API_URL}/usuario/login`, { email, senha })
       .pipe(
-        switchMap(backendResponse => {
-          console.log('[AuthService] Resposta bruta do backend:', backendResponse);
-
-          // Normaliza a resposta
-          const authData = normalizeAuthResponse(backendResponse);
-          console.log('[AuthService] Dados normalizados:', authData);
-          console.log('[AuthService] Salvando no storage...');
-
+        map(backendResponse => adaptBackendAuthResponse(backendResponse)),
+        switchMap(authData => {
           return from(this.storage.set(STORAGE_KEYS.AUTH_DATA, authData)).pipe(
-            tap(async () => {
-              console.log('[AuthService] Dados salvos com sucesso');
-
-              // Verificação imediata
-              const verificacao = await this.storage.get(STORAGE_KEYS.AUTH_DATA);
-              console.log('[AuthService] Verificação imediata:', verificacao);
-
-              this.authState.next(true);
-            }),
+            tap(() => this.authState.next(true)),
             map(() => authData)
           );
         }),
@@ -97,15 +69,11 @@ export class AuthService {
   /**
    * Tenta cadastrar um novo usuário no backend
    */
-  cadastrar(dados: any): Observable<any> { // Alterado o tipo de retorno, pode ser 'any' ou uma interface de utilizador (sem AuthData)
-    return this.http.post<any>(`${this.API_URL}/usuario/cadastrar`, dados) // Alterado para <any>
+  cadastrar(dados: any): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/usuario/cadastrar`, dados)
       .pipe(
-        tap(() => {
-          console.log('Cadastro enviado ao backend.');
-        }),
         catchError(err => {
           console.error('Erro no cadastro:', err);
-          // Não definimos o authState aqui
           throw new Error(err.error?.erro || 'Erro ao tentar cadastrar');
         })
       );
@@ -127,17 +95,11 @@ export class AuthService {
     return await this.storage.get<AuthData>(STORAGE_KEYS.AUTH_DATA);
   }
 
+  /**
+   * Obtém o ID do usuário atual como string
+   */
   async getCurrentUserUuid(): Promise<string | null> {
     const authData = await this.getAuthData();
-    console.log('[AuthService] getAuthData retornou:', authData);
-
-    if (authData && authData.usuario && authData.usuario.idusuario) {
-      const uuid = authData.usuario.idusuario.toString();
-      console.log('[AuthService] UUID do usuário:', uuid);
-      return uuid;
-    }
-
-    console.warn('[AuthService] AuthData inválido ou incompleto:', authData);
-    return null;
+    return authData?.usuario?.idusuario?.toString() || null;
   }
 }

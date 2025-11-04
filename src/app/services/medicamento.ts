@@ -320,8 +320,6 @@ export class MedicamentoService {
     );
 
     await this.carregarMedicamentos();
-
-    console.log(`✅ Medicamento ${uuid} sincronizado (serverId: ${serverId})`);
   }
 
   /**
@@ -330,11 +328,9 @@ export class MedicamentoService {
    */
   public async mesclarDoServidor(medicamentosServidor: any[] | undefined): Promise<void> {
     if (!medicamentosServidor || medicamentosServidor.length === 0) {
-      console.log('ℹ️ Nenhum medicamento recebido do servidor para mesclar');
       return;
     }
 
-    console.log(`📥 Iniciando mesclagem de ${medicamentosServidor.length} medicamentos do servidor`);
 
     const locais = await this.storage.getCollection<MedicamentoLocal>(
       STORAGE_KEYS.MEDICAMENTOS
@@ -362,7 +358,12 @@ export class MedicamentoService {
           };
 
           locais[existente.uuid] = atualizado;
-          console.log(`📝 Medicamento ${existente.uuid} atualizado do servidor`);
+          // Atualiza
+          await this.storage.setInCollection(
+            STORAGE_KEYS.MEDICAMENTOS,
+            existente.uuid,
+            atualizado
+          );
         }
       } else {
         // Não existe localmente - adiciona
@@ -380,15 +381,12 @@ export class MedicamentoService {
         };
 
         locais[novoLocal.uuid] = novoLocal;
-        console.log(`➕ Novo medicamento ${novoLocal.uuid} adicionado: ${novoLocal.nome}`);
       }
     }
 
     // Salva e notifica
     await this.storage.setCollection(STORAGE_KEYS.MEDICAMENTOS, locais);
-    await this.carregarMedicamentos(); // Força reload
-
-    console.log(`✅ Mesclagem concluída. Total local: ${Object.keys(locais).length} medicamentos`);
+    await this.carregarMedicamentos();
   }
 
   // ==================== UTILITÁRIOS ====================
