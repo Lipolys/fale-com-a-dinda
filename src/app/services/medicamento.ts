@@ -1,4 +1,3 @@
-// src/app/servicos/medicamento.service.ts
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { StorageService, STORAGE_KEYS } from './storage';
