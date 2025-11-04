@@ -28,49 +28,54 @@ export class Tab2Page implements OnInit, OnDestroy {
     private toastCtrl: ToastController
   ) {}
 
-  async ngOnInit() {
-    // Obtém o UUID do cliente logado
-    this.clienteUuid = await this.authService.getCurrentUserUuid();
+  ngOnInit() {
+    const authSub = this.authService.isAuthenticated$.subscribe(async isAuthenticated => {
+      if (isAuthenticated) {
+        this.clienteUuid = await this.authService.getCurrentUserUuid();
+        if (!this.clienteUuid) {
+          await this.mostrarToast('Erro: Usuário não identificado', 'danger');
+          return;
+        }
 
-    if (!this.clienteUuid) {
-      await this.mostrarToast('Erro: Usuário não identificado', 'danger');
-      return;
-    }
+        if (this.subscriptions.length <= 1) {
+          const ministraSub = this.ministraService.ministra$.subscribe(
+            ministracoes => {
+              this.ministracoes = ministracoes;
+            }
+          );
+          this.subscriptions.push(ministraSub);
 
-    // Inscreve-se nos observables para atualização automática
-    const ministraSub = this.ministraService.ministra$.subscribe(
-      ministracoes => {
-        this.ministracoes = ministracoes;
+          const medicamentosSub = this.medicamentoService.medicamentos$.subscribe(
+            medicamentos => {
+              // DEBUG: Log para ver quando os medicamentos chegam e quais são
+              console.log('[Tab2Page] Medicamentos recebidos da subscrição:', medicamentos);
+              this.medicamentosDisponiveis = medicamentos;
+            }
+          );
+          this.subscriptions.push(medicamentosSub);
+        }
+
+        await this.carregarDados();
+
+      } else {
+        this.ministracoes = [];
+        this.medicamentosDisponiveis = [];
+        this.clienteUuid = null;
       }
-    );
-    this.subscriptions.push(ministraSub);
-
-    const medicamentosSub = this.medicamentoService.medicamentos$.subscribe(
-      medicamentos => {
-        this.medicamentosDisponiveis = medicamentos;
-      }
-    );
-    this.subscriptions.push(medicamentosSub);
-
-    // Carrega os dados iniciais
-    await this.carregarDados();
+    });
+    this.subscriptions.push(authSub);
   }
 
   ngOnDestroy() {
-    // Cancela todas as inscrições
     this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
-  /**
-   * Recarrega quando a página entra em foco
-   */
   async ionViewWillEnter() {
-    await this.carregarDados();
+    if (this.clienteUuid) {
+      await this.carregarDados();
+    }
   }
 
-  /**
-   * Carrega ministracões e medicamentos disponíveis
-   */
   public async carregarDados() {
     const loading = await this.loadingCtrl.create({
       message: 'Carregando seus remédios...'
@@ -78,12 +83,8 @@ export class Tab2Page implements OnInit, OnDestroy {
     await loading.present();
 
     try {
-      // Carrega ministracões do cliente
       await this.ministraService.recarregar();
-
-      // Carrega medicamentos disponíveis (para adicionar novos)
       await this.medicamentoService.recarregar();
-
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       await this.mostrarToast('Erro ao carregar dados', 'danger');
@@ -92,10 +93,10 @@ export class Tab2Page implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Abre modal para adicionar novo medicamento
-   */
   async adicionarMedicamento() {
+    // DEBUG: Log para ver o estado dos medicamentos no momento do clique
+    console.log('[Tab2Page] Tentando adicionar. Medicamentos disponíveis no momento:', this.medicamentosDisponiveis);
+
     if (this.medicamentosDisponiveis.length === 0) {
       await this.mostrarToast(
         'Nenhum medicamento disponível. Peça ao farmacêutico para cadastrar.',
@@ -104,7 +105,6 @@ export class Tab2Page implements OnInit, OnDestroy {
       return;
     }
 
-    // Cria inputs para o formulário
     const inputs: any[] = [
       {
         name: 'medicamento_uuid',
@@ -114,7 +114,6 @@ export class Tab2Page implements OnInit, OnDestroy {
       }
     ];
 
-    // Adiciona cada medicamento como opção
     this.medicamentosDisponiveis.forEach(med => {
       inputs.push({
         name: 'medicamento_uuid',
@@ -124,7 +123,6 @@ export class Tab2Page implements OnInit, OnDestroy {
       });
     });
 
-    // Adiciona campos adicionais
     inputs.push(
       {
         name: 'horario',
@@ -163,7 +161,6 @@ export class Tab2Page implements OnInit, OnDestroy {
               await this.mostrarToast('Selecione um medicamento', 'warning');
               return false;
             }
-
             await this.salvarMinistracao(data);
             return true;
           }
@@ -174,9 +171,6 @@ export class Tab2Page implements OnInit, OnDestroy {
     await alert.present();
   }
 
-  /**
-   * Salva nova ministração
-   */
   private async salvarMinistracao(dados: any) {
     const loading = await this.loadingCtrl.create({
       message: 'Salvando...'
@@ -194,7 +188,7 @@ export class Tab2Page implements OnInit, OnDestroy {
           horario: dados.horario || null,
           dosagem: dados.dosagem || null,
           frequencia: dados.frequencia ? parseInt(dados.frequencia) : undefined,
-          status: 1 // Ativo por padrão
+          status: 1
         },
         this.clienteUuid
       );
@@ -212,9 +206,6 @@ export class Tab2Page implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Edita uma ministração existente
-   */
   async editarMinistracao(ministracao: MinistraLocal) {
     const alert = await this.alertCtrl.create({
       header: `✏️ Editar ${ministracao.medicamento_nome || 'Remédio'}`,
@@ -275,9 +266,6 @@ export class Tab2Page implements OnInit, OnDestroy {
     await alert.present();
   }
 
-  /**
-   * Atualiza ministração no serviço
-   */
   private async atualizarMinistracao(uuid: string, dados: any) {
     const loading = await this.loadingCtrl.create({
       message: 'Atualizando...'
@@ -305,9 +293,6 @@ export class Tab2Page implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Remove uma ministração após confirmação
-   */
   async removerMinistracao(ministracao: MinistraLocal) {
     const alert = await this.alertCtrl.create({
       header: 'Confirmar Remoção',
@@ -332,9 +317,6 @@ export class Tab2Page implements OnInit, OnDestroy {
     await alert.present();
   }
 
-  /**
-   * Confirma e executa a remoção
-   */
   private async confirmarRemocao(uuid: string) {
     const loading = await this.loadingCtrl.create({
       message: 'Removendo...'
@@ -356,31 +338,19 @@ export class Tab2Page implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Formata horário para exibição
-   */
   formatarHorario(horario: string | null): string {
     if (!horario) return 'Não definido';
     return horario;
   }
 
-  /**
-   * Formata status para exibição
-   */
   getStatusTexto(status: number): string {
     return status === 1 ? 'Ativo' : 'Inativo';
   }
 
-  /**
-   * Retorna cor do status
-   */
   getStatusCor(status: number): string {
     return status === 1 ? 'success' : 'medium';
   }
 
-  /**
-   * Mostra toast de feedback
-   */
   private async mostrarToast(
     mensagem: string,
     cor: 'success' | 'danger' | 'warning'

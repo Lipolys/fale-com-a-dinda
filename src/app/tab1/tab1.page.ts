@@ -71,8 +71,6 @@ export class Tab1Page implements OnInit {
   verificarProximoMedicamento() {
     const proximo = this.medicamentos.find(m => m.status === 'proximo');
     if (proximo && this.mostrarAlertaProximo) {
-      // Lógica para mostrar notificação
-      console.log(`Lembrete: ${proximo.nome} às ${proximo.horario}`);
     }
   }
 

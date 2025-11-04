@@ -1,4 +1,3 @@
-// src/app/servicos/auth.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, from } from 'rxjs';
@@ -37,7 +36,7 @@ export class AuthService {
   constructor(
     private http: HttpClient,
     private storage: StorageService,
-    private router: Router
+    private router: Router,
   ) {
     this.verificarAutenticacaoInicial();
   }
@@ -116,6 +115,9 @@ export class AuthService {
 
   async getCurrentUserUuid(): Promise<string | null> {
     const authData = await this.getAuthData();
-    return authData ? authData.usuario.idusuario.toString() : null;
+    if (authData && authData.usuario && authData.usuario.idusuario) {
+        return authData.usuario.idusuario.toString();
+    }
+    return null;
   }
 }

@@ -328,10 +328,15 @@ export class MedicamentoService {
    * Mescla medicamentos vindos do servidor com locais
    * (Chamado pelo SyncService após download)
    */
-  public async mesclarDoServidor(medicamentosServidor: any[]): Promise<void> {
+  public async mesclarDoServidor(medicamentosServidor: any[] | undefined): Promise<void> {
     const locais = await this.storage.getCollection<MedicamentoLocal>(
       STORAGE_KEYS.MEDICAMENTOS
     );
+
+    if (!medicamentosServidor || medicamentosServidor.length === 0) {
+      console.log('ℹ️ Nenhum medicamento recebido do servidor para mesclar');
+      return;
+    }
 
     for (const apiMed of medicamentosServidor) {
       // Procura se já existe localmente (por serverId)

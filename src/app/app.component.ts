@@ -1,4 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { Platform } from '@ionic/angular';
+import { StorageService } from './services/storage';
+import { SyncService } from './services/sync';
 
 @Component({
   selector: 'app-root',
@@ -6,6 +9,21 @@ import { Component } from '@angular/core';
   styleUrls: ['app.component.scss'],
   standalone: false,
 })
-export class AppComponent {
-  constructor() {}
+export class AppComponent implements OnInit {
+  constructor(
+    private platform: Platform,
+    private storageService: StorageService,
+    private syncService: SyncService
+  ) {}
+
+  async ngOnInit() {
+    await this.initializeApp();
+  }
+
+  async initializeApp() {
+    await this.platform.ready();
+    console.log('App Component Initializing...');
+    await this.storageService.init();
+    console.log('Storage Initialized from AppComponent');
+  }
 }
