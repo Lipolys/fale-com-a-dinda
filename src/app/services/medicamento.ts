@@ -10,7 +10,7 @@ import {
   markAsUpdated,
   markAsDeleted,
   SyncStatus
-} from '../modelos/local.models';
+} from '../models/local.models';
 
 /**
  * Service para gerenciar medicamentos com suporte offline-first
