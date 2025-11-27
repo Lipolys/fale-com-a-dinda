@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { StorageService, STORAGE_KEYS } from './storage';
+import { AuthService } from './auth';
 import {
   MedicamentoLocal,
   CriarMedicamentoLocalDTO,
@@ -30,8 +31,19 @@ export class MedicamentoService {
   private medicamentosSubject = new BehaviorSubject<MedicamentoLocal[]>([]);
   public medicamentos$ = this.medicamentosSubject.asObservable();
 
-  constructor(private storage: StorageService) {
-    this.carregarMedicamentos();
+  constructor(
+    private storage: StorageService,
+    private authService: AuthService
+  ) {
+    // Monitora mudanças de autenticação para recarregar dados
+    this.authService.isAuthenticated$.subscribe(async (isAuthenticated) => {
+      if (isAuthenticated) {
+        await this.carregarMedicamentos();
+      } else {
+        // Limpa dados ao deslogar
+        this.medicamentosSubject.next([]);
+      }
+    });
   }
 
   // ==================== OPERAÇÕES CRUD LOCAIS ====================

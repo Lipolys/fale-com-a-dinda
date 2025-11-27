@@ -45,7 +45,7 @@ export interface BackendLoginResponse {
     id: number;
     nome: string;
     email: string;
-    telefone?: string;
+    telefone?: string | number | null; // Aceita string, number ou null
     tipo: string;
   };
 }

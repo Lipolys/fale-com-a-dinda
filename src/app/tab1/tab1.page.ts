@@ -166,10 +166,7 @@ export class Tab1Page implements OnInit, OnDestroy {
   }
 
   adicionarMedicamento() {
-    this.navCtrl.navigateForward('/tabs/tab2');
+    this.navCtrl.navigateForward('/app/tab2');
   }
 
-  verHistorico() {
-    this.navCtrl.navigateForward('/tabs/tab2');
-  }
 }

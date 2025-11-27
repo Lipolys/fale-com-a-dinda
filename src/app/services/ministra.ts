@@ -25,14 +25,23 @@ export class MinistraService {
   // Observable para componentes reagirem a mudanças
   private ministraSubject = new BehaviorSubject<MinistraLocal[]>([]);
   public ministra$ = this.ministraSubject.asObservable();
-  private clienteUuid: any;
+  private clienteUuid: string | null = null;
 
   constructor(
     private storage: StorageService,
     private authService: AuthService
   ) {
-    this.clienteUuid = this.authService.getCurrentUserUuid();
-    this.carregarMinistra();
+    // Monitora mudanças de autenticação para recarregar dados
+    this.authService.isAuthenticated$.subscribe(async (isAuthenticated) => {
+      if (isAuthenticated) {
+        this.clienteUuid = await this.authService.getCurrentUserUuid();
+        await this.carregarMinistra();
+      } else {
+        // Limpa dados ao deslogar
+        this.clienteUuid = null;
+        this.ministraSubject.next([]);
+      }
+    });
   }
 
   // ==================== OPERAÇÕES CRUD LOCAIS ====================
@@ -48,11 +57,13 @@ export class MinistraService {
     // Filtrar deletados localmente
     const ativos = ministra.filter(m => !m.deletedLocally);
 
-    const clienteMinistra = ativos.filter(m => m.cliente_uuid === this.clienteUuid);
-    this.ministraSubject.next(clienteMinistra);
-
-    // Por enquanto, carregando todos (ajuste quando tiver o auth)
-    this.ministraSubject.next(ativos);
+    // Filtra apenas as ministrações do cliente logado
+    if (this.clienteUuid) {
+      const clienteMinistra = ativos.filter(m => m.cliente_uuid === this.clienteUuid);
+      this.ministraSubject.next(clienteMinistra);
+    } else {
+      this.ministraSubject.next([]);
+    }
   }
 
   /**

@@ -24,6 +24,11 @@ export class Tab4Page implements OnInit {
     await this.carregarPerfil();
   }
 
+  // Recarrega perfil sempre que a view entrar (caso tenha mudado de usuário)
+  async ionViewWillEnter() {
+    await this.carregarPerfil();
+  }
+
   async carregarPerfil() {
     this.usuario = await this.authService.getCurrentUser();
   }

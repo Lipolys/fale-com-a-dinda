@@ -60,6 +60,12 @@ export class AuthService {
     return this.http.post<BackendLoginResponse>(`${this.API_URL}/usuario/login`, { email, senha })
       .pipe(
         switchMap(response => {
+          // Converte telefone para string de forma segura
+          let telefone: string | undefined = undefined;
+          if (response.usuario.telefone !== null && response.usuario.telefone !== undefined) {
+            telefone = String(response.usuario.telefone);
+          }
+
           const authData: AuthData = {
             accessToken: response.accessToken,
             refreshToken: response.refreshToken,
@@ -68,10 +74,11 @@ export class AuthService {
               idusuario: response.usuario.id,
               nome: response.usuario.nome,
               email: response.usuario.email,
-              telefone: response.usuario.telefone,
+              telefone: telefone,
               tipo_usuario: response.usuario.tipo as TipoUsuario
             }
           };
+
 
           return from(this.storage.set(STORAGE_KEYS.AUTH_DATA, authData)).pipe(
             tap(() => this.authState.next(true)),
@@ -181,16 +188,15 @@ export class AuthService {
           `${this.API_URL}/usuario/logout`,
           { refreshToken: authData.refreshToken }
         ).toPromise();
-
-        console.log('✅ Refresh token invalidado no servidor');
       } catch (error) {
-        console.error('⚠️ Erro ao invalidar token no servidor:', error);
+        console.error('Erro ao invalidar token no servidor:', error);
         // Continua com o logout local mesmo se falhar no servidor
       }
     }
 
-    // Remove dados locais
-    await this.storage.remove(STORAGE_KEYS.AUTH_DATA);
+    // Limpa TODOS os dados do storage para evitar que dados do usuário anterior apareçam
+    await this.storage.clear();
+
     this.authState.next(false);
     this.router.navigateByUrl('/login', { replaceUrl: true });
   }
@@ -217,15 +223,14 @@ export class AuthService {
         }
       ).toPromise();
 
-      console.log('✅ Todos os dispositivos deslogados');
+      // Limpa TODOS os dados do storage
+      await this.storage.clear();
 
-      // Remove dados locais
-      await this.storage.remove(STORAGE_KEYS.AUTH_DATA);
       this.authState.next(false);
       this.router.navigateByUrl('/login', { replaceUrl: true });
 
     } catch (error) {
-      console.error('❌ Erro ao deslogar todos dispositivos:', error);
+      console.error('Erro ao deslogar todos dispositivos:', error);
       throw error;
     }
   }

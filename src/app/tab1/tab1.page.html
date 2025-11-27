@@ -20,7 +20,7 @@
     <ion-icon name="alarm"></ion-icon>
     <div>
       <strong>Lembrete!</strong><br>
-      Hora de tomar Dipirona - 14h00
+      Não esqueça de tomar seus remédios na hora correta.
     </div>
   </div>
 
@@ -63,16 +63,11 @@
     </ion-item>
   </ion-list>
 
-  <!-- Botões de ação -->
+  <!-- Botão de ação -->
   <div style="padding: 20px;">
     <ion-button expand="block" class="btn-large" color="primary" (click)="adicionarMedicamento()">
       <ion-icon slot="start" name="add-circle"></ion-icon>
       Adicionar Novo Remédio
-    </ion-button>
-
-    <ion-button expand="block" class="btn-large" color="secondary" fill="outline" (click)="verHistorico()">
-      <ion-icon slot="start" name="calendar"></ion-icon>
-      Ver Histórico
     </ion-button>
   </div>
 
@@ -88,15 +83,6 @@
       Lembre-se de beber bastante água ao tomar seus medicamentos.
       Isso ajuda na absorção e previne efeitos colaterais.
     </p>
-  </div>
-
-  <!-- Alerta de interação -->
-  <div class="alert-dinda alert-danger" style="margin-top: 20px;">
-    <ion-icon name="warning"></ion-icon>
-    <div>
-      <strong>Atenção!</strong><br>
-      Dipirona + Aspirina podem interagir. Consulte seu médico.
-    </div>
   </div>
 
   <!-- Espaçamento final -->
