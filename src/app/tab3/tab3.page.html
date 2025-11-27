@@ -1,7 +1,7 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-title>
-      Tab 3
+      ❓ Perguntas Frequentes
     </ion-title>
   </ion-toolbar>
 </ion-header>
@@ -9,9 +9,29 @@
 <ion-content [fullscreen]="true">
   <ion-header collapse="condense">
     <ion-toolbar>
-      <ion-title size="large">Tab 3</ion-title>
+      <ion-title size="large">FAQ</ion-title>
     </ion-toolbar>
   </ion-header>
 
-  <app-explore-container name="Tab 3 page"></app-explore-container>
+  <div class="ion-padding">
+    @if (faqs.length === 0) {
+    <div style="text-align: center; margin-top: 40px; color: #666;">
+      <ion-icon name="help-circle-outline" style="font-size: 64px; opacity: 0.5;"></ion-icon>
+      <p>Nenhuma pergunta encontrada.</p>
+    </div>
+    }
+
+    <ion-accordion-group>
+      @for (faq of faqs; track faq.uuid) {
+      <ion-accordion [value]="faq.uuid">
+        <ion-item slot="header" color="light">
+          <ion-label class="ion-text-wrap"><strong>{{ faq.pergunta }}</strong></ion-label>
+        </ion-item>
+        <div class="ion-padding" slot="content" style="background-color: #f9f9f9;">
+          {{ faq.resposta }}
+        </div>
+      </ion-accordion>
+      }
+    </ion-accordion-group>
+  </div>
 </ion-content>

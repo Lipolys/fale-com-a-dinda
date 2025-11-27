@@ -5,7 +5,14 @@ import { tap, switchMap, catchError, filter, map } from 'rxjs/operators';
 import { StorageService, STORAGE_KEYS } from './storage';
 import { environment } from '../../environments/environment';
 import { Router } from '@angular/router';
-import { AuthData, BackendLoginResponse, adaptBackendAuthResponse } from '../models/auth.model';
+import {
+  AuthData,
+  TokenData,
+  Usuario,
+  BackendLoginResponse,
+  BackendRefreshResponse,
+  TipoUsuario
+} from '../models/auth.model';
 
 @Injectable({
   providedIn: 'root'
@@ -13,15 +20,15 @@ import { AuthData, BackendLoginResponse, adaptBackendAuthResponse } from '../mod
 export class AuthService {
   private readonly API_URL = environment.apiUrl;
 
-  // BehaviorSubject para saber o estado de autenticação: null = verificando, false = deslogado, true = logado
+  // BehaviorSubject para saber o estado de autenticação
   private authState = new BehaviorSubject<boolean | null>(null);
 
-  // Observable público que filtra o estado 'null' para que os consumidores saibam apenas se está logado ou não
+  // Observable público
   public isAuthenticated$: Observable<boolean> = this.authState.asObservable().pipe(
     filter((value): value is boolean => value !== null)
   );
 
-  // Observable para o AuthGuard, que precisa saber dos 3 estados
+  // Observable para o AuthGuard
   public authStateForGuard$: Observable<boolean | null> = this.authState.asObservable();
 
   constructor(
@@ -38,7 +45,7 @@ export class AuthService {
   async verificarAutenticacaoInicial(): Promise<void> {
     try {
       const authData = await this.storage.get<AuthData>(STORAGE_KEYS.AUTH_DATA);
-      this.authState.next(!!authData?.token);
+      this.authState.next(!!authData?.accessToken);
     } catch (error) {
       console.error('Erro ao verificar autenticação inicial:', error);
       this.authState.next(false);
@@ -47,12 +54,25 @@ export class AuthService {
 
   /**
    * Tenta fazer o login no backend
+   * Agora retorna Access Token + Refresh Token
    */
   login(email: string, senha: string): Observable<AuthData> {
     return this.http.post<BackendLoginResponse>(`${this.API_URL}/usuario/login`, { email, senha })
       .pipe(
-        map(backendResponse => adaptBackendAuthResponse(backendResponse)),
-        switchMap(authData => {
+        switchMap(response => {
+          const authData: AuthData = {
+            accessToken: response.accessToken,
+            refreshToken: response.refreshToken,
+            expiresIn: response.expiresIn,
+            usuario: {
+              idusuario: response.usuario.id,
+              nome: response.usuario.nome,
+              email: response.usuario.email,
+              telefone: response.usuario.telefone,
+              tipo_usuario: response.usuario.tipo as TipoUsuario
+            }
+          };
+
           return from(this.storage.set(STORAGE_KEYS.AUTH_DATA, authData)).pipe(
             tap(() => this.authState.next(true)),
             map(() => authData)
@@ -64,6 +84,74 @@ export class AuthService {
           throw new Error('Email ou senha inválidos');
         })
       );
+  }
+
+  /**
+   * Renova o Access Token usando o Refresh Token
+   * Implementa o fluxo de Rotating Refresh Tokens
+   */
+  async refreshAccessToken(): Promise<TokenData | null> {
+    try {
+      const authData = await this.storage.get<AuthData>(STORAGE_KEYS.AUTH_DATA);
+
+      if (!authData?.refreshToken) {
+        console.error('Refresh token não encontrado');
+        return null;
+      }
+
+      const response = await this.http.post<BackendRefreshResponse>(
+        `${this.API_URL}/usuario/refresh`,
+        { refreshToken: authData.refreshToken }
+      ).toPromise();
+
+      if (response) {
+        // Atualiza os tokens armazenados
+        const novaAuthData: AuthData = {
+          ...authData,
+          accessToken: response.accessToken,
+          refreshToken: response.refreshToken, // IMPORTANTE: Token rotacionado
+          expiresIn: response.expiresIn
+        };
+
+        await this.storage.set(STORAGE_KEYS.AUTH_DATA, novaAuthData);
+
+        console.log('✅ Tokens renovados com sucesso');
+        return {
+          accessToken: response.accessToken,
+          refreshToken: response.refreshToken,
+          expiresIn: response.expiresIn
+        };
+      }
+
+      return null;
+
+    } catch (error: any) {
+      console.error('❌ Erro ao renovar token:', error);
+
+      // Se o refresh token é inválido/revogado, desloga
+      if (error.error?.deveFazerLogin) {
+        console.warn('⚠️ Refresh token inválido/revogado. Fazendo logout...');
+        await this.logout();
+      }
+
+      return null;
+    }
+  }
+
+  /**
+   * Obtém o Access Token atual
+   */
+  async getAccessToken(): Promise<string | null> {
+    const authData = await this.storage.get<AuthData>(STORAGE_KEYS.AUTH_DATA);
+    return authData?.accessToken || null;
+  }
+
+  /**
+   * Obtém o Refresh Token atual
+   */
+  async getRefreshToken(): Promise<string | null> {
+    const authData = await this.storage.get<AuthData>(STORAGE_KEYS.AUTH_DATA);
+    return authData?.refreshToken || null;
   }
 
   /**
@@ -81,11 +169,93 @@ export class AuthService {
 
   /**
    * Faz o logout do usuário
+   * Invalida o refresh token no servidor
    */
   async logout(): Promise<void> {
+    const authData = await this.storage.get<AuthData>(STORAGE_KEYS.AUTH_DATA);
+
+    // Tenta invalidar o refresh token no servidor
+    if (authData?.refreshToken) {
+      try {
+        await this.http.post(
+          `${this.API_URL}/usuario/logout`,
+          { refreshToken: authData.refreshToken }
+        ).toPromise();
+
+        console.log('✅ Refresh token invalidado no servidor');
+      } catch (error) {
+        console.error('⚠️ Erro ao invalidar token no servidor:', error);
+        // Continua com o logout local mesmo se falhar no servidor
+      }
+    }
+
+    // Remove dados locais
     await this.storage.remove(STORAGE_KEYS.AUTH_DATA);
     this.authState.next(false);
     this.router.navigateByUrl('/login', { replaceUrl: true });
+  }
+
+  /**
+   * Faz logout de TODOS os dispositivos
+   * Requer autenticação (Access Token)
+   */
+  async logoutTodosDispositivos(): Promise<void> {
+    try {
+      const token = await this.getAccessToken();
+
+      if (!token) {
+        throw new Error('Token não disponível');
+      }
+
+      await this.http.post(
+        `${this.API_URL}/usuario/logout-todos`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      ).toPromise();
+
+      console.log('✅ Todos os dispositivos deslogados');
+
+      // Remove dados locais
+      await this.storage.remove(STORAGE_KEYS.AUTH_DATA);
+      this.authState.next(false);
+      this.router.navigateByUrl('/login', { replaceUrl: true });
+
+    } catch (error) {
+      console.error('❌ Erro ao deslogar todos dispositivos:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Lista sessões ativas do usuário
+   */
+  async listarSessoes(): Promise<any[]> {
+    try {
+      const token = await this.getAccessToken();
+
+      if (!token) {
+        throw new Error('Token não disponível');
+      }
+
+      const sessoes = await this.http.get<any[]>(
+        `${this.API_URL}/usuario/sessoes`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      ).toPromise();
+
+      return sessoes || [];
+
+    } catch (error) {
+      console.error('❌ Erro ao listar sessões:', error);
+      return [];
+    }
   }
 
   /**
@@ -101,5 +271,13 @@ export class AuthService {
   async getCurrentUserUuid(): Promise<string | null> {
     const authData = await this.getAuthData();
     return authData?.usuario?.idusuario?.toString() || null;
+  }
+
+  /**
+   * Obtém dados do usuário atual
+   */
+  async getCurrentUser(): Promise<Usuario | null> {
+    const authData = await this.getAuthData();
+    return authData?.usuario || null;
   }
 }

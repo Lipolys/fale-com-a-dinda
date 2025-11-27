@@ -1,45 +1,61 @@
 /**
- * Interfaces para autenticação
+ * Interfaces para autenticação com Refresh Token
  */
 
 export type TipoUsuario = 'CLIENTE' | 'FARMACEUTICO';
 
-// Formato interno usado pelo frontend
+/**
+ * Estrutura do usuário
+ */
 export interface Usuario {
   idusuario: number;
   nome: string;
   email: string;
+  telefone?: string;
   tipo_usuario: TipoUsuario;
 }
 
+/**
+ * Dados completos de autenticação armazenados localmente
+ */
 export interface AuthData {
-  token: string;
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
   usuario: Usuario;
 }
 
-// Formato real retornado pelo backend
+/**
+ * Dados dos tokens de autenticação (para retorno de métodos)
+ */
+export interface TokenData {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+}
+
+/**
+ * Resposta do backend no endpoint /usuario/login
+ */
 export interface BackendLoginResponse {
-  token: string;
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
   usuario: {
     id: number;
     nome: string;
     email: string;
+    telefone?: string;
     tipo: string;
   };
 }
 
 /**
- * Adaptador: converte a resposta do backend para o formato interno
+ * Resposta do backend no endpoint /usuario/refresh
  */
-export function adaptBackendAuthResponse(backendResponse: BackendLoginResponse): AuthData {
-  return {
-    token: backendResponse.token,
-    usuario: {
-      idusuario: backendResponse.usuario.id,
-      nome: backendResponse.usuario.nome,
-      email: backendResponse.usuario.email,
-      tipo_usuario: backendResponse.usuario.tipo as TipoUsuario
-    }
-  };
+export interface BackendRefreshResponse {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
 }
 

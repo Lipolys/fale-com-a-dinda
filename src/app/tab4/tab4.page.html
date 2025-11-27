@@ -1,0 +1,48 @@
+<ion-header class="header-dinda">
+  <ion-toolbar>
+    <ion-title>👤 Meu Perfil</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+
+  <div class="profile-header">
+    <div class="avatar-container">
+      <ion-icon name="person" color="light"></ion-icon>
+    </div>
+    <h2 class="user-name">{{ usuario?.nome || 'Usuário' }}</h2>
+    <p class="user-type">{{ usuario?.tipo_usuario === 'FARMACEUTICO' ? 'Farmacêutico(a)' : 'Cliente' }}</p>
+  </div>
+
+  <ion-list class="info-list">
+    <ion-list-header>
+      <ion-label>Informações Pessoais</ion-label>
+    </ion-list-header>
+
+    <ion-item class="list-item-dinda">
+      <ion-icon slot="start" name="mail-outline" color="primary"></ion-icon>
+      <ion-label>
+        <h3>Email</h3>
+        <p>{{ usuario?.email }}</p>
+      </ion-label>
+    </ion-item>
+
+    <ion-item class="list-item-dinda">
+      <ion-icon slot="start" name="call-outline" color="primary"></ion-icon>
+      <ion-label>
+        <h3>Telefone</h3>
+        <p>{{ usuario?.telefone || 'Não informado' }}</p>
+      </ion-label>
+    </ion-item>
+  </ion-list>
+
+  <div class="actions-container">
+    <ion-button expand="block" color="danger" fill="outline" class="btn-large" (click)="logout()">
+      <ion-icon slot="start" name="log-out-outline"></ion-icon>
+      Sair do Aplicativo
+    </ion-button>
+
+    <p class="app-version">Versão {{ versaoApp }}</p>
+  </div>
+
+</ion-content>

@@ -190,6 +190,35 @@ export class MinistraService {
   }
 
   /**
+   * Registra que o medicamento foi tomado agora
+   */
+  public async registrarTomada(uuid: string): Promise<void> {
+    const ministra = await this.buscarPorUuid(uuid);
+    if (!ministra) return;
+
+    const atualizado: MinistraLocal = {
+      ...ministra,
+      ultimaTomada: now(),
+      ...markAsUpdated(ministra)
+    };
+
+    await this.storage.setInCollection(
+      STORAGE_KEYS.MINISTRA,
+      uuid,
+      atualizado
+    );
+
+    // Não precisa syncar 'ultimaTomada' com o backend se o backend não suportar.
+    // Mas se suportar, deveria ir no 'data'.
+    // Assumindo que o backend não rastreia histórico de tomadas por enquanto (baseado na API doc),
+    // mantemos apenas local ou enviamos se tiver campo.
+    // A API doc não mostra endpoint de histórico de tomadas.
+    // Então é feature local por enquanto.
+
+    await this.carregarMinistra();
+  }
+
+  /**
    * Deleta uma ministração (soft delete local)
    */
   public async deletar(uuid: string): Promise<boolean> {

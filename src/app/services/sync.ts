@@ -12,6 +12,8 @@ import {
 import { environment } from '../../environments/environment';
 import { MedicamentoService } from './medicamento';
 import { AuthService } from './auth';
+import { FaqService } from './faq';
+import { InteracaoService } from './interacao';
 
 /**
  * Estado de sincronização da aplicação
@@ -54,7 +56,9 @@ export class SyncService {
     private http: HttpClient,
     private storage: StorageService,
     private medicamentoService: MedicamentoService,
-    private authService: AuthService
+    private authService: AuthService,
+    private faqService: FaqService,
+    private interacaoService: InteracaoService
   ) {
     this.initNetworkMonitoring();
     this.initAuthMonitoring();
@@ -138,12 +142,12 @@ export class SyncService {
    */
   private async getHeaders(): Promise<HttpHeaders> {
     const authData = await this.storage.get<any>(STORAGE_KEYS.AUTH_DATA);
-    if (!authData || !authData.token) {
+    if (!authData || !authData.accessToken) {
       throw new Error('Usuário não autenticado');
     }
     return new HttpHeaders({
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${authData.token}`
+      'Authorization': `Bearer ${authData.accessToken}`
     });
   }
 
@@ -287,6 +291,7 @@ export class SyncService {
     await this.downloadMinistra(headers);
     await this.downloadDicas(headers);
     await this.downloadFaqs(headers);
+    await this.downloadInteracoes(headers);
     this.updateState({ progress: 100 });
     console.log('✅ Download completo');
   }
@@ -333,10 +338,24 @@ export class SyncService {
       const url = `${this.API_URL}/faq`;
       const response = await this.http.get<any[]>(url, { headers }).toPromise();
       if (response) {
+        await this.faqService.mesclarDoServidor(response);
         console.log(`📥 Baixadas ${response.length} FAQs`);
       }
     } catch (error) {
       console.error('Erro ao baixar FAQs:', error);
+    }
+  }
+
+  private async downloadInteracoes(headers: HttpHeaders): Promise<void> {
+    try {
+      const url = `${this.API_URL}/interacao`;
+      const response = await this.http.get<any[]>(url, { headers }).toPromise();
+      if (response) {
+        await this.interacaoService.mesclarDoServidor(response);
+        console.log(`📥 Baixadas ${response.length} interações`);
+      }
+    } catch (error) {
+      console.error('Erro ao baixar interações:', error);
     }
   }
 

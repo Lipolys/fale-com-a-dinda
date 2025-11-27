@@ -1,15 +1,16 @@
-import { Component, OnInit } from '@angular/core';
-import { AlertController, ToastController } from '@ionic/angular';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { AlertController, ToastController, NavController } from '@ionic/angular';
+import { MinistraService } from '../services/ministra';
+import { MinistraLocal } from '../models/local.models';
+import { Subscription } from 'rxjs';
 
-interface Medicamento {
-  id: number;
-  nome: string;
-  dosagem: string;
+interface MedicamentoView {
+  ministracao: MinistraLocal;
   horario: string;
-  observacoes: string;
-  status: 'tomado' | 'proximo' | 'pendente';
+  status: 'tomado' | 'proximo' | 'pendente' | 'atrasado';
   cor: string;
   icone: string;
+  tempoRestante?: string;
 }
 
 @Component({
@@ -18,120 +19,119 @@ interface Medicamento {
   styleUrls: ['tab1.page.scss'],
   standalone: false,
 })
-export class Tab1Page implements OnInit {
+export class Tab1Page implements OnInit, OnDestroy {
 
-  medicamentos: Medicamento[] = [
-    {
-      id: 1,
-      nome: 'Dipirona 500mg',
-      dosagem: '1 comprimido',
-      horario: '8h00',
-      observacoes: 'Tomar após café',
-      status: 'tomado',
-      cor: 'success',
-      icone: 'checkmark-circle'
-    },
-    {
-      id: 2,
-      nome: 'Losartana 50mg',
-      dosagem: '1 comprimido',
-      horario: '14h00',
-      observacoes: 'Tomar com água',
-      status: 'proximo',
-      cor: 'warning',
-      icone: 'time'
-    },
-    {
-      id: 3,
-      nome: 'Metformina 850mg',
-      dosagem: '1 comprimido',
-      horario: '20h00',
-      observacoes: 'Após jantar',
-      status: 'pendente',
-      cor: 'medium',
-      icone: 'ellipse-outline'
-    }
-  ];
-
-  mostrarAlertaProximo = true;
-  temInteracao = true;
+  medicamentosHoje: MedicamentoView[] = [];
+  private subscription?: Subscription;
 
   constructor(
     private alertController: AlertController,
-    private toastController: ToastController
-  ) {}
+    private toastController: ToastController,
+    private ministraService: MinistraService,
+    private navCtrl: NavController
+  ) { }
 
   ngOnInit() {
-    this.verificarProximoMedicamento();
+    this.subscription = this.ministraService.ministra$.subscribe(ministracoes => {
+      this.atualizarListaHoje(ministracoes);
+    });
   }
 
-  /**
-   * Verifica se há medicamento próximo para tomar
-   */
-  verificarProximoMedicamento() {
-    const proximo = this.medicamentos.find(m => m.status === 'proximo');
-    if (proximo && this.mostrarAlertaProximo) {
-    }
+  ngOnDestroy() {
+    this.subscription?.unsubscribe();
   }
 
-  /**
-   * Marca medicamento como tomado
-   */
-  async marcarComoTomado(medicamento: Medicamento) {
+  atualizarListaHoje(ministracoes: MinistraLocal[]) {
+    const hoje = new Date().toISOString().split('T')[0];
+
+    // Filtra apenas ativos (status 1)
+    const ativos = ministracoes.filter(m => m.status === 1);
+
+    this.medicamentosHoje = ativos.map(m => {
+      let status: 'tomado' | 'proximo' | 'pendente' | 'atrasado' = 'pendente';
+      let cor = 'medium';
+      let icone = 'ellipse-outline';
+
+      // Verifica se foi tomado hoje (baseado na data de ultimaTomada)
+      // ultimaTomada é ISO string completa
+      const tomouHoje = m.ultimaTomada && m.ultimaTomada.startsWith(hoje);
+
+      if (tomouHoje) {
+        status = 'tomado';
+        cor = 'success';
+        icone = 'checkmark-circle';
+      } else {
+        // Verifica horário
+        if (m.horario) {
+          const agora = new Date();
+          const [hora, min] = m.horario.split(':').map(Number);
+          const dataHorario = new Date();
+          dataHorario.setHours(hora, min, 0, 0);
+
+          const diff = dataHorario.getTime() - agora.getTime();
+          const diffMinutos = diff / (1000 * 60);
+
+          if (diffMinutos < -60) { // Mais de 1h atrasado
+            status = 'atrasado';
+            cor = 'danger';
+            icone = 'alert-circle';
+          } else if (diffMinutos <= 60 && diffMinutos > -60) { // Próxima 1h ou recente
+            status = 'proximo';
+            cor = 'warning';
+            icone = 'time';
+          }
+        }
+      }
+
+      return {
+        ministracao: m,
+        horario: m.horario || '??:??',
+        status,
+        cor,
+        icone
+      };
+    }).sort((a, b) => a.horario.localeCompare(b.horario));
+  }
+
+  async marcarComoTomado(item: MedicamentoView) {
     const alert = await this.alertController.create({
       header: 'Confirmar',
-      message: `Você tomou ${medicamento.nome}?`,
+      message: `Você tomou ${item.ministracao.medicamento_nome}?`,
       cssClass: 'alert-dinda',
       buttons: [
         {
           text: 'Não',
           role: 'cancel',
-          cssClass: 'alert-button-cancel',
-          handler: () => {
-            console.log('Cancelado');
-          }
+          cssClass: 'alert-button-cancel'
         },
         {
           text: 'Sim, tomei',
           cssClass: 'alert-button-confirm',
           handler: async () => {
-            medicamento.status = 'tomado';
-            medicamento.cor = 'success';
-            medicamento.icone = 'checkmark-circle';
-
+            await this.ministraService.registrarTomada(item.ministracao.uuid);
             await this.mostrarToastSucesso(
-              `${medicamento.nome} marcado como tomado! 👍`
+              `${item.ministracao.medicamento_nome} marcado como tomado! 👍`
             );
           }
         }
       ]
     });
-
     await alert.present();
   }
 
-  /**
-   * Visualiza detalhes do medicamento
-   */
-  async verDetalhes(medicamento: Medicamento) {
+  async verDetalhes(item: MedicamentoView) {
+    const m = item.ministracao;
     const alert = await this.alertController.create({
-      header: medicamento.nome,
+      header: m.medicamento_nome,
       cssClass: 'modal-dinda',
       message: `
         <div style="text-align: left; font-size: 18px; line-height: 1.8;">
-          <p><strong>📋 Dosagem:</strong><br>${medicamento.dosagem}</p>
-          <p><strong>🕐 Horário:</strong><br>${medicamento.horario}</p>
-          <p><strong>📝 Observações:</strong><br>${medicamento.observacoes}</p>
+          <p><strong>📋 Dosagem:</strong><br>${m.dosagem || 'Não informada'}</p>
+          <p><strong>🕐 Horário:</strong><br>${m.horario || 'Não informado'}</p>
+          <p><strong>🔄 Frequência:</strong><br>${m.frequencia ? m.frequencia + 'h' : 'Não informada'}</p>
         </div>
       `,
       buttons: [
-        {
-          text: 'Editar',
-          cssClass: 'alert-button-outline',
-          handler: () => {
-            this.editarMedicamento(medicamento);
-          }
-        },
         {
           text: 'Fechar',
           role: 'cancel',
@@ -143,101 +143,6 @@ export class Tab1Page implements OnInit {
     await alert.present();
   }
 
-  /**
-   * Adiciona novo medicamento
-   */
-  async adicionarMedicamento() {
-    const alert = await this.alertController.create({
-      header: '➕ Novo Remédio',
-      cssClass: 'modal-dinda',
-      inputs: [
-        {
-          name: 'nome',
-          type: 'text',
-          placeholder: 'Nome do remédio',
-          cssClass: 'input-dinda'
-        },
-        {
-          name: 'dosagem',
-          type: 'text',
-          placeholder: 'Dosagem (ex: 1 comprimido)',
-          cssClass: 'input-dinda'
-        },
-        {
-          name: 'horario',
-          type: 'time',
-          placeholder: 'Horário',
-          cssClass: 'input-dinda'
-        },
-        {
-          name: 'observacoes',
-          type: 'textarea',
-          placeholder: 'Observações',
-          cssClass: 'input-dinda'
-        }
-      ],
-      buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel',
-          cssClass: 'alert-button-cancel'
-        },
-        {
-          text: 'Adicionar',
-          cssClass: 'alert-button-confirm',
-          handler: async (data) => {
-            if (!data.nome || !data.dosagem || !data.horario) {
-              await this.mostrarToastErro(
-                'Por favor, preencha todos os campos obrigatórios'
-              );
-              return false;
-            }
-
-            const novoMedicamento: Medicamento = {
-              id: this.medicamentos.length + 1,
-              nome: data.nome,
-              dosagem: data.dosagem,
-              horario: data.horario,
-              observacoes: data.observacoes || '',
-              status: 'pendente',
-              cor: 'medium',
-              icone: 'ellipse-outline'
-            };
-
-            this.medicamentos.push(novoMedicamento);
-
-            await this.mostrarToastSucesso(
-              `${data.nome} adicionado com sucesso! ✅`
-            );
-
-            return true;
-          }
-        }
-      ]
-    });
-
-    await alert.present();
-  }
-
-  /**
-   * Edita medicamento existente
-   */
-  editarMedicamento(medicamento: Medicamento) {
-    // Implementar navegação para página de edição
-    console.log('Editando:', medicamento);
-  }
-
-  /**
-   * Ver histórico de medicamentos
-   */
-  verHistorico() {
-    // Implementar navegação para página de histórico
-    console.log('Ver histórico');
-  }
-
-  /**
-   * Mostra toast de sucesso
-   */
   async mostrarToastSucesso(mensagem: string) {
     const toast = await this.toastController.create({
       message: mensagem,
@@ -250,39 +155,21 @@ export class Tab1Page implements OnInit {
     await toast.present();
   }
 
-  /**
-   * Mostra toast de erro
-   */
-  async mostrarToastErro(mensagem: string) {
-    const toast = await this.toastController.create({
-      message: mensagem,
-      duration: 3000,
-      position: 'top',
-      color: 'danger',
-      cssClass: 'toast-dinda',
-      icon: 'close-circle'
-    });
-    await toast.present();
-  }
-
-  /**
-   * Formata status para exibição
-   */
   getStatusBadge(status: string): string {
     const badges: Record<string, string> = {
       'tomado': 'Feito',
       'proximo': 'Próximo',
-      'pendente': 'Pendente'
+      'pendente': 'Pendente',
+      'atrasado': 'Atrasado'
     };
     return badges[status] || 'Pendente';
   }
 
-  /**
-   * Calcula tempo até próximo medicamento
-   */
-  getTempoRestante(horario: string): string {
-    // Implementar cálculo real baseado em horário
-    // Este é apenas um exemplo
-    return 'Em 30 minutos';
+  adicionarMedicamento() {
+    this.navCtrl.navigateForward('/tabs/tab2');
+  }
+
+  verHistorico() {
+    this.navCtrl.navigateForward('/tabs/tab2');
   }
 }

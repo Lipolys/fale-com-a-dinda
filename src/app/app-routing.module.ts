@@ -6,13 +6,13 @@ const routes: Routes = [
   // Rota pública de Login
   {
     path: 'login',
-    loadChildren: () => import('./auth/login/login.module').then( m => m.LoginPageModule)
+    loadChildren: () => import('./auth/login/login.module').then(m => m.LoginPageModule)
     // Adicionar um guarda aqui para redirecionar se JÁ estiver logado (opcional)
   },
   // Rota pública de Cadastro
   {
     path: 'cadastro',
-    loadChildren: () => import('./auth/cadastro/cadastro.module').then( m => m.CadastroPageModule)
+    loadChildren: () => import('./auth/cadastro/cadastro.module').then(m => m.CadastroPageModule)
   },
   // Rota protegida para o app principal (Tabs)
   {
@@ -35,4 +35,4 @@ const routes: Routes = [
   ],
   exports: [RouterModule]
 })
-export class AppRoutingModule {}
+export class AppRoutingModule { }

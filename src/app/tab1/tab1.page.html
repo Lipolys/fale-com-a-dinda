@@ -29,72 +29,48 @@
 
   <!-- Lista de medicamentos -->
   <ion-list>
-    <!-- Item 1 - Já tomado -->
-    <ion-item class="list-item-dinda" button>
-      <ion-icon slot="start" name="checkmark-circle" color="success" class="icon-large"></ion-icon>
-      <ion-label>
-        <h2 style="font-size: 20px; font-weight: 600; color: #333; margin-bottom: 6px;">
-          Dipirona 500mg
-        </h2>
-        <p style="font-size: 16px; color: #666;">
-          8h00 - Tomado ✓
-        </p>
-        <p style="font-size: 16px; color: #666;">
-          1 comprimido após café
-        </p>
-      </ion-label>
-      <ion-badge slot="end" color="success" class="badge-dinda">
-        Feito
-      </ion-badge>
-    </ion-item>
+    <ion-item-sliding *ngFor="let item of medicamentosHoje">
+      <ion-item class="list-item-dinda" button (click)="verDetalhes(item)">
+        <ion-icon slot="start" [name]="item.icone" [color]="item.cor" class="icon-large"></ion-icon>
+        <ion-label>
+          <h2 style="font-size: 20px; font-weight: 600; color: #333; margin-bottom: 6px;">
+            {{ item.ministracao.medicamento_nome }}
+          </h2>
+          <p style="font-size: 16px; color: #666;">
+            {{ item.horario }} - {{ getStatusBadge(item.status) }}
+          </p>
+          <p style="font-size: 16px; color: #666;">
+            {{ item.ministracao.dosagem || 'Dosagem não informada' }}
+          </p>
+        </ion-label>
+        <ion-badge slot="end" [color]="item.cor" class="badge-dinda">
+          {{ getStatusBadge(item.status) }}
+        </ion-badge>
+      </ion-item>
 
-    <!-- Item 2 - Próximo -->
-    <ion-item class="list-item-dinda" button>
-      <ion-icon slot="start" name="time" color="warning" class="icon-large"></ion-icon>
-      <ion-label>
-        <h2 style="font-size: 20px; font-weight: 600; color: #333; margin-bottom: 6px;">
-          Losartana 50mg
-        </h2>
-        <p style="font-size: 16px; color: #f4a261; font-weight: 600;">
-          14h00 - Em 30 minutos
-        </p>
-        <p style="font-size: 16px; color: #666;">
-          1 comprimido com água
-        </p>
-      </ion-label>
-      <ion-badge slot="end" color="warning" class="badge-dinda">
-        Próximo
-      </ion-badge>
-    </ion-item>
+      <ion-item-options side="end">
+        <ion-item-option color="success" (click)="marcarComoTomado(item)">
+          <ion-icon slot="icon-only" name="checkmark"></ion-icon>
+        </ion-item-option>
+      </ion-item-options>
+    </ion-item-sliding>
 
-    <!-- Item 3 - Pendente -->
-    <ion-item class="list-item-dinda" button>
-      <ion-icon slot="start" name="ellipse-outline" color="medium" class="icon-large"></ion-icon>
-      <ion-label>
-        <h2 style="font-size: 20px; font-weight: 600; color: #333; margin-bottom: 6px;">
-          Metformina 850mg
-        </h2>
-        <p style="font-size: 16px; color: #666;">
-          20h00 - Após jantar
-        </p>
-        <p style="font-size: 16px; color: #666;">
-          1 comprimido
-        </p>
+    <ion-item *ngIf="medicamentosHoje.length === 0" lines="none">
+      <ion-label class="ion-text-center" color="medium">
+        <h2>Nenhum medicamento para hoje 🎉</h2>
+        <p>Toque em "Adicionar Novo Remédio" para começar</p>
       </ion-label>
-      <ion-badge slot="end" color="medium" class="badge-dinda">
-        Pendente
-      </ion-badge>
     </ion-item>
   </ion-list>
 
   <!-- Botões de ação -->
   <div style="padding: 20px;">
-    <ion-button expand="block" class="btn-large" color="primary">
+    <ion-button expand="block" class="btn-large" color="primary" (click)="adicionarMedicamento()">
       <ion-icon slot="start" name="add-circle"></ion-icon>
       Adicionar Novo Remédio
     </ion-button>
 
-    <ion-button expand="block" class="btn-large" color="secondary" fill="outline">
+    <ion-button expand="block" class="btn-large" color="secondary" fill="outline" (click)="verHistorico()">
       <ion-icon slot="start" name="calendar"></ion-icon>
       Ver Histórico
     </ion-button>

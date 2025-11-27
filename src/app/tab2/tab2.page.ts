@@ -6,6 +6,7 @@ import { MinistraService } from '../services/ministra';
 import { MedicamentoService } from '../services/medicamento';
 import { SyncService } from '../services/sync';
 import { MinistracaoPage } from '../ministracao/ministracao.page';
+import { InteracaoService } from '../services/interacao';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -30,8 +31,9 @@ export class Tab2Page implements OnInit, OnDestroy {
     private alertCtrl: AlertController,
     private loadingCtrl: LoadingController,
     private toastCtrl: ToastController,
-    private modalCtrl: ModalController
-  ) {}
+    private modalCtrl: ModalController,
+    private interacaoService: InteracaoService
+  ) { }
 
   async ngOnInit() {
     // Configura subscrições aos observables (apenas uma vez)
@@ -151,8 +153,55 @@ export class Tab2Page implements OnInit, OnDestroy {
     const { data, role } = await modal.onWillDismiss();
 
     if (role === 'confirm' && data) {
+      await this.verificarESalvar(data);
+    }
+  }
+
+  private async verificarESalvar(data: any) {
+    const novoMedUuid = data.medicamento_uuid;
+    // Pega UUIDs dos medicamentos que o usuário já toma (excluindo duplicatas se houver)
+    const meusMedsUuids = [...new Set(this.ministracoes.map(m => m.medicamento_uuid))];
+
+    const interacoes = await this.interacaoService.verificarInteracoes(novoMedUuid, meusMedsUuids);
+
+    if (interacoes.length > 0) {
+      const alert = await this.alertCtrl.create({
+        header: '⚠️ Interação Medicamentosa',
+        message: this.formatarMensagemInteracao(interacoes),
+        cssClass: 'modal-dinda', // Reusing modal style for better look or custom alert class
+        buttons: [
+          {
+            text: 'Cancelar',
+            role: 'cancel',
+            cssClass: 'alert-button-cancel'
+          },
+          {
+            text: 'Adicionar Mesmo Assim',
+            cssClass: 'alert-button-danger',
+            handler: async () => {
+              await this.salvarMinistracao(data);
+            }
+          }
+        ]
+      });
+      await alert.present();
+    } else {
       await this.salvarMinistracao(data);
     }
+  }
+
+  private formatarMensagemInteracao(interacoes: any[]): string {
+    let msg = '<div style="text-align: left; max-height: 300px; overflow-y: auto;">';
+    msg += '<p>Este medicamento interage com outros que você já toma:</p>';
+    interacoes.forEach(i => {
+      msg += `<div style="margin-bottom: 12px; padding: 8px; background: #fff0f0; border-radius: 8px;">`;
+      msg += `<strong>${i.medicamento1_nome} + ${i.medicamento2_nome}</strong><br>`;
+      msg += `<span style="color: #d32f2f; font-weight: bold;">Gravidade: ${i.gravidade}</span><br>`;
+      msg += `<span style="font-size: 14px;">${i.descricao}</span>`;
+      msg += `</div>`;
+    });
+    msg += '</div>';
+    return msg;
   }
 
   private async salvarMinistracao(dados: any) {

@@ -432,3 +432,64 @@ export function sortByUpdated<T extends BaseLocalModel>(items: T[]): T[] {
     new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   );
 }
+/**
+ * Converte resposta da API para FaqLocal
+ */
+export function faqApiToLocal(
+  api: any,
+  existingLocal?: FaqLocal
+): FaqLocal {
+  const base = existingLocal || createBaseModel();
+
+  return {
+    ...base,
+    serverId: api.idfaq,
+    pergunta: api.pergunta,
+    resposta: api.resposta,
+    farmaceutico_uuid: existingLocal?.farmaceutico_uuid || generateUUID(), // Se não tem local, gera um (mas deveria vir do server se possível, ou ignorar)
+    syncStatus: SyncStatus.SYNCED,
+    syncedAt: now(),
+    serverUpdatedAt: api.updatedAt || api.createdAt,
+
+    // Dados desnormalizados
+    farmaceutico_nome: api.farmaceutico?.usuario?.nome,
+    farmaceutico_crf: api.farmaceutico?.crf
+  };
+}
+
+/**
+ * Converte resposta da API para InteracaoLocal
+ */
+export function interacaoApiToLocal(
+  api: any,
+  med1Uuid: string,
+  med2Uuid: string,
+  existingLocal?: InteracaoLocal
+): InteracaoLocal {
+  const base = existingLocal || createBaseModel();
+
+  return {
+    ...base,
+    serverIds: {
+      idmedicamento1: api.idmedicamento1,
+      idmedicamento2: api.idmedicamento2
+    },
+    serverId: 0,
+
+    medicamento1_uuid: med1Uuid,
+    medicamento2_uuid: med2Uuid,
+    farmaceutico_uuid: existingLocal?.farmaceutico_uuid || generateUUID(),
+
+    descricao: api.descricao,
+    gravidade: api.gravidade,
+    fonte: api.fonte,
+
+    syncStatus: SyncStatus.SYNCED,
+    syncedAt: now(),
+    serverUpdatedAt: api.updatedAt || api.createdAt,
+
+    medicamento1_nome: api.medicamento1?.nome,
+    medicamento2_nome: api.medicamento2?.nome,
+    farmaceutico_nome: api.farmaceutico?.usuario?.nome
+  };
+}
