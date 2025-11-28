@@ -1,8 +1,11 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { AlertController, ToastController, NavController } from '@ionic/angular';
+import { AlertController, ToastController, NavController, ModalController } from '@ionic/angular';
 import { MinistraService } from '../services/ministra';
 import { MinistraLocal } from '../models/local.models';
 import { Subscription } from 'rxjs';
+import { AuthService } from '../services/auth';
+import { TipoUsuario } from '../models/auth.model';
+import { InteracoesManagerPage } from '../interacoes-manager/interacoes-manager.page';
 
 interface MedicamentoView {
   ministracao: MinistraLocal;
@@ -22,23 +25,39 @@ interface MedicamentoView {
 export class Tab1Page implements OnInit, OnDestroy {
 
   medicamentosHoje: MedicamentoView[] = [];
+  tipoUsuario: TipoUsuario | null = null;
   private subscription?: Subscription;
 
   constructor(
     private alertController: AlertController,
     private toastController: ToastController,
     private ministraService: MinistraService,
-    private navCtrl: NavController
+    private navCtrl: NavController,
+    private authService: AuthService,
+    private modalCtrl: ModalController
   ) { }
 
-  ngOnInit() {
-    this.subscription = this.ministraService.ministra$.subscribe(ministracoes => {
-      this.atualizarListaHoje(ministracoes);
-    });
+  async ngOnInit() {
+    await this.carregarUsuario();
+
+    if (this.tipoUsuario === 'CLIENTE') {
+      this.subscription = this.ministraService.ministra$.subscribe(ministracoes => {
+        this.atualizarListaHoje(ministracoes);
+      });
+    }
+  }
+
+  async ionViewWillEnter() {
+    await this.carregarUsuario();
   }
 
   ngOnDestroy() {
     this.subscription?.unsubscribe();
+  }
+
+  async carregarUsuario() {
+    const user = await this.authService.getCurrentUser();
+    this.tipoUsuario = user?.tipo_usuario || null;
   }
 
   atualizarListaHoje(ministracoes: MinistraLocal[]) {
@@ -166,7 +185,28 @@ export class Tab1Page implements OnInit, OnDestroy {
   }
 
   adicionarMedicamento() {
-    this.navCtrl.navigateForward('/app/tab2');
+    this.navCtrl.navigateForward('/tabs/tab2');
+  }
+
+  // Ações do Farmacêutico
+  gerenciarMedicamentos() {
+    this.navCtrl.navigateForward('tabs/tab2');
+  }
+
+  gerenciarFaqs() {
+    this.navCtrl.navigateForward('tabs/tab3');
+  }
+
+  gerenciarDicas() {
+    // Implementar navegação para gerenciamento de dicas
+    console.log('Gerenciar Dicas');
+  }
+
+  async gerenciarInteracoes() {
+    const modal = await this.modalCtrl.create({
+      component: InteracoesManagerPage
+    });
+    await modal.present();
   }
 
 }

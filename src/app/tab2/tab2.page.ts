@@ -19,6 +19,7 @@ export class Tab2Page implements OnInit, OnDestroy {
 
   public ministracoes: MinistraLocal[] = [];
   public medicamentosDisponiveis: MedicamentoLocal[] = [];
+  public tipoUsuario: any | null = null; // TipoUsuario import needed if strict
   private clienteUuid: string | null = null;
   private subscriptions: Subscription[] = [];
   private isInitialized = false;
@@ -76,7 +77,9 @@ export class Tab2Page implements OnInit, OnDestroy {
    * Inicializa dados do usuário (apenas uma vez)
    */
   private async inicializarDados(): Promise<void> {
-    this.clienteUuid = await this.authService.getCurrentUserUuid();
+    const user = await this.authService.getCurrentUser();
+    this.clienteUuid = user?.idusuario?.toString() || null;
+    this.tipoUsuario = user?.tipo_usuario || null;
 
     if (!this.clienteUuid) {
       console.error('[Tab2Page] UUID do usuário não disponível');
@@ -95,6 +98,7 @@ export class Tab2Page implements OnInit, OnDestroy {
     this.ministracoes = [];
     this.medicamentosDisponiveis = [];
     this.clienteUuid = null;
+    this.tipoUsuario = null;
     this.isInitialized = false;
   }
 
@@ -362,5 +366,161 @@ export class Tab2Page implements OnInit, OnDestroy {
       cssClass: 'toast-dinda'
     });
     await toast.present();
+  }
+
+  // ==================== AÇÕES DO FARMACÊUTICO ====================
+
+  async adicionarMedicamentoCatalogo() {
+    const alert = await this.alertCtrl.create({
+      header: 'Novo Medicamento',
+      inputs: [
+        {
+          name: 'nome',
+          type: 'text',
+          placeholder: 'Nome do Medicamento'
+        },
+        {
+          name: 'classe',
+          type: 'text',
+          placeholder: 'Classe (ex: Analgésico)'
+        },
+        {
+          name: 'descricao',
+          type: 'textarea',
+          placeholder: 'Descrição breve'
+        }
+      ],
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Salvar',
+          handler: async (data) => {
+            if (!data.nome) {
+              this.mostrarToast('Nome é obrigatório', 'warning');
+              return false;
+            }
+            await this.salvarMedicamentoCatalogo(data);
+            return true;
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  private async salvarMedicamentoCatalogo(data: any) {
+    const loading = await this.loadingCtrl.create({ message: 'Salvando...' });
+    await loading.present();
+    try {
+      await this.medicamentoService.criar({
+        nome: data.nome,
+        classe: data.classe || 'Geral',
+        descricao: data.descricao,
+        farmaceutico_uuid: this.clienteUuid || undefined
+      });
+      await this.mostrarToast('Medicamento criado com sucesso!', 'success');
+    } catch (error: any) {
+      await this.mostrarToast('Erro ao criar medicamento: ' + error.message, 'danger');
+    } finally {
+      await loading.dismiss();
+    }
+  }
+
+  async editarMedicamentoCatalogo(medicamento: MedicamentoLocal) {
+    const alert = await this.alertCtrl.create({
+      header: 'Editar Medicamento',
+      inputs: [
+        {
+          name: 'nome',
+          type: 'text',
+          value: medicamento.nome,
+          placeholder: 'Nome'
+        },
+        {
+          name: 'classe',
+          type: 'text',
+          value: medicamento.classe,
+          placeholder: 'Classe'
+        },
+        {
+          name: 'descricao',
+          type: 'textarea',
+          value: medicamento.descricao,
+          placeholder: 'Descrição'
+        }
+      ],
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Salvar',
+          handler: async (data) => {
+            if (!data.nome) {
+              this.mostrarToast('Nome é obrigatório', 'warning');
+              return false;
+            }
+            await this.atualizarMedicamentoCatalogo(medicamento.uuid, data);
+            return true;
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  private async atualizarMedicamentoCatalogo(uuid: string, data: any) {
+    const loading = await this.loadingCtrl.create({ message: 'Atualizando...' });
+    await loading.present();
+    try {
+      await this.medicamentoService.editar(uuid, {
+        nome: data.nome,
+        classe: data.classe,
+        descricao: data.descricao
+      });
+      await this.mostrarToast('Medicamento atualizado!', 'success');
+    } catch (error: any) {
+      await this.mostrarToast('Erro ao atualizar: ' + error.message, 'danger');
+    } finally {
+      await loading.dismiss();
+    }
+  }
+
+  async removerMedicamentoCatalogo(medicamento: MedicamentoLocal) {
+    const alert = await this.alertCtrl.create({
+      header: 'Excluir Medicamento',
+      message: `Tem certeza que deseja excluir "${medicamento.nome}" do catálogo?`,
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Excluir',
+          cssClass: 'alert-button-danger',
+          handler: async () => {
+            await this.deletarMedicamentoCatalogo(medicamento.uuid);
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  private async deletarMedicamentoCatalogo(uuid: string) {
+    const loading = await this.loadingCtrl.create({ message: 'Excluindo...' });
+    await loading.present();
+    try {
+      await this.medicamentoService.deletar(uuid);
+      await this.mostrarToast('Medicamento excluído!', 'success');
+    } catch (error: any) {
+      await this.mostrarToast('Erro ao excluir: ' + error.message, 'danger');
+    } finally {
+      await loading.dismiss();
+    }
   }
 }

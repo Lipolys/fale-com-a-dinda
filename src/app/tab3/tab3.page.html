@@ -1,7 +1,11 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-title>
+      @if (tipoUsuario === 'FARMACEUTICO') {
+      🛠️ Gerenciar FAQs
+      } @else {
       ❓ Perguntas Frequentes
+      }
     </ion-title>
   </ion-toolbar>
 </ion-header>
@@ -14,6 +18,7 @@
   </ion-header>
 
   <div class="ion-padding">
+
     @if (faqs.length === 0) {
     <div style="text-align: center; margin-top: 40px; color: #666;">
       <ion-icon name="help-circle-outline" style="font-size: 64px; opacity: 0.5;"></ion-icon>
@@ -21,6 +26,8 @@
     </div>
     }
 
+    <!-- VIEW DO CLIENTE -->
+    @if (tipoUsuario === 'CLIENTE') {
     <ion-accordion-group>
       @for (faq of faqs; track faq.uuid) {
       <ion-accordion [value]="faq.uuid">
@@ -33,5 +40,42 @@
       </ion-accordion>
       }
     </ion-accordion-group>
+    }
+
+    <!-- VIEW DO FARMACEUTICO -->
+    @if (tipoUsuario === 'FARMACEUTICO') {
+    <ion-list>
+      @for (faq of faqs; track faq.uuid) {
+      <ion-item-sliding>
+        <ion-item button (click)="editarFaq(faq)">
+          <ion-label class="ion-text-wrap">
+            <h2>{{ faq.pergunta }}</h2>
+            <p>{{ faq.resposta }}</p>
+          </ion-label>
+          @if (faq.syncStatus !== 'SYNCED') {
+          <ion-icon name="cloud-offline-outline" slot="end" color="warning"></ion-icon>
+          }
+        </ion-item>
+
+        <ion-item-options side="end">
+          <ion-item-option color="primary" (click)="editarFaq(faq)">
+            <ion-icon slot="icon-only" name="create"></ion-icon>
+          </ion-item-option>
+          <ion-item-option color="danger" (click)="removerFaq(faq)">
+            <ion-icon slot="icon-only" name="trash"></ion-icon>
+          </ion-item-option>
+        </ion-item-options>
+      </ion-item-sliding>
+      }
+    </ion-list>
+
+    <!-- Botão flutuante para adicionar (Farmacêutico) -->
+    <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+      <ion-fab-button (click)="adicionarFaq()" color="secondary">
+        <ion-icon name="add"></ion-icon>
+      </ion-fab-button>
+    </ion-fab>
+    }
+
   </div>
 </ion-content>

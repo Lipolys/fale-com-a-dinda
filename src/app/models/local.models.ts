@@ -493,3 +493,27 @@ export function interacaoApiToLocal(
     farmaceutico_nome: api.farmaceutico?.usuario?.nome
   };
 }
+
+/**
+ * Converte resposta da API para DicaLocal
+ */
+export function dicaApiToLocal(
+  api: any,
+  existingLocal?: DicaLocal
+): DicaLocal {
+  const base = existingLocal || createBaseModel();
+
+  return {
+    ...base,
+    serverId: api.iddica,
+    texto: api.texto,
+    farmaceutico_uuid: existingLocal?.farmaceutico_uuid || generateUUID(),
+    syncStatus: SyncStatus.SYNCED,
+    syncedAt: now(),
+    serverUpdatedAt: api.updatedAt || api.createdAt,
+
+    // Dados desnormalizados
+    farmaceutico_nome: api.farmaceutico?.usuario?.nome,
+    farmaceutico_crf: api.farmaceutico?.crf
+  };
+}

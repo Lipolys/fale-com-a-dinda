@@ -1,90 +1,141 @@
-<ion-header class="header-dinda">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-button>
-        <ion-icon slot="icon-only" name="menu"></ion-icon>
-      </ion-button>
-    </ion-buttons>
-    <ion-title>🏠 Início</ion-title>
+<ion-header [translucent]="true" class="ion-no-border">
+  <ion-toolbar class="header-toolbar">
+    <ion-title>
+      <div class="header-content">
+        <span class="greeting">Olá! 👋</span>
+        <span class="subtitle" *ngIf="tipoUsuario === 'CLIENTE'">Seus remédios de hoje</span>
+        <span class="subtitle" *ngIf="tipoUsuario === 'FARMACEUTICO'">Painel do Farmacêutico</span>
+      </div>
+    </ion-title>
     <ion-buttons slot="end">
-      <ion-button>
-        <ion-icon slot="icon-only" name="notifications"></ion-icon>
+      <ion-button class="notification-btn">
+        <ion-icon name="notifications-outline"></ion-icon>
+        <span class="badge">2</span>
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content>
-  <!-- Alerta de lembrete -->
-  <div class="alert-dinda alert-warning">
-    <ion-icon name="alarm"></ion-icon>
-    <div>
-      <strong>Lembrete!</strong><br>
-      Não esqueça de tomar seus remédios na hora correta.
+<ion-content [fullscreen]="true" class="main-content">
+
+  <!-- VIEW DO CLIENTE -->
+  <div *ngIf="tipoUsuario === 'CLIENTE'">
+    <div class="empty-state" *ngIf="medicamentosHoje.length === 0">
+      <img src="assets/images/medicine.svg" alt="Sem medicamentos" />
+      <h3>Tudo tranquilo por aqui!</h3>
+      <p>Você não tem medicamentos agendados para hoje.</p>
+      <ion-button expand="block" class="action-btn" (click)="adicionarMedicamento()">
+        Adicionar Medicamento
+        <ion-icon name="add-circle-outline" slot="end"></ion-icon>
+      </ion-button>
+    </div>
+
+    <div class="timeline-container" *ngIf="medicamentosHoje.length > 0">
+      <div class="timeline-item" *ngFor="let item of medicamentosHoje" [class.completed]="item.status === 'tomado'">
+
+        <div class="time-column">
+          <span class="time">{{ item.horario }}</span>
+          <div class="line"></div>
+        </div>
+
+        <div class="card-column">
+          <ion-card class="med-card" [ngClass]="item.status">
+            <div class="card-status-strip" [style.background]="'var(--ion-color-' + item.cor + ')'"></div>
+
+            <ion-card-content>
+              <div class="med-header">
+                <div class="med-info">
+                  <h2>{{ item.ministracao.medicamento_nome }}</h2>
+                  <p class="dosage">
+                    <ion-icon name="fitness-outline"></ion-icon>
+                    {{ item.ministracao.dosagem }}
+                  </p>
+                </div>
+                <ion-badge [color]="item.cor" class="status-badge">
+                  {{ getStatusBadge(item.status) }}
+                </ion-badge>
+              </div>
+
+              <div class="med-actions" *ngIf="item.status !== 'tomado'">
+                <ion-button fill="clear" size="small" (click)="verDetalhes(item)">
+                  Detalhes
+                </ion-button>
+                <ion-button class="take-btn" [color]="item.cor" expand="block" (click)="marcarComoTomado(item)">
+                  <ion-icon [name]="item.icone" slot="start"></ion-icon>
+                  Marcar como tomado
+                </ion-button>
+              </div>
+
+              <div class="med-completed" *ngIf="item.status === 'tomado'">
+                <ion-icon name="checkmark-done-circle" color="success"></ion-icon>
+                <span>Tomado às {{ item.ministracao.ultimaTomada | date:'HH:mm' }}</span>
+              </div>
+            </ion-card-content>
+          </ion-card>
+        </div>
+      </div>
+    </div>
+
+    <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+      <ion-fab-button (click)="adicionarMedicamento()" class="add-fab">
+        <ion-icon name="add"></ion-icon>
+      </ion-fab-button>
+    </ion-fab>
+  </div>
+
+  <!-- VIEW DO FARMACEUTICO -->
+  <div *ngIf="tipoUsuario === 'FARMACEUTICO'" class="pharmacist-dashboard">
+    <div class="dashboard-grid">
+
+      <ion-card class="dashboard-card" (click)="gerenciarMedicamentos()">
+        <ion-card-header>
+          <div class="icon-container color-primary">
+            <ion-icon name="medkit"></ion-icon>
+          </div>
+          <ion-card-title>Medicamentos</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          Gerenciar catálogo de medicamentos
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card class="dashboard-card" (click)="gerenciarFaqs()">
+        <ion-card-header>
+          <div class="icon-container color-secondary">
+            <ion-icon name="help-buoy"></ion-icon>
+          </div>
+          <ion-card-title>FAQs</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          Gerenciar perguntas frequentes
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card class="dashboard-card" (click)="gerenciarDicas()">
+        <ion-card-header>
+          <div class="icon-container color-tertiary">
+            <ion-icon name="bulb"></ion-icon>
+          </div>
+          <ion-card-title>Dicas de Saúde</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          Criar e editar dicas para pacientes
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card class="dashboard-card" (click)="gerenciarInteracoes()">
+        <ion-card-header>
+          <div class="icon-container color-danger">
+            <ion-icon name="git-network"></ion-icon>
+          </div>
+          <ion-card-title>Interações</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          Verificar e gerenciar interações
+        </ion-card-content>
+      </ion-card>
+
     </div>
   </div>
 
-  <!-- Título da seção -->
-  <h2 class="section-title">📋 Remédios de Hoje</h2>
-
-  <!-- Lista de medicamentos -->
-  <ion-list>
-    <ion-item-sliding *ngFor="let item of medicamentosHoje">
-      <ion-item class="list-item-dinda" button (click)="verDetalhes(item)">
-        <ion-icon slot="start" [name]="item.icone" [color]="item.cor" class="icon-large"></ion-icon>
-        <ion-label>
-          <h2 style="font-size: 20px; font-weight: 600; color: #333; margin-bottom: 6px;">
-            {{ item.ministracao.medicamento_nome }}
-          </h2>
-          <p style="font-size: 16px; color: #666;">
-            {{ item.horario }} - {{ getStatusBadge(item.status) }}
-          </p>
-          <p style="font-size: 16px; color: #666;">
-            {{ item.ministracao.dosagem || 'Dosagem não informada' }}
-          </p>
-        </ion-label>
-        <ion-badge slot="end" [color]="item.cor" class="badge-dinda">
-          {{ getStatusBadge(item.status) }}
-        </ion-badge>
-      </ion-item>
-
-      <ion-item-options side="end">
-        <ion-item-option color="success" (click)="marcarComoTomado(item)">
-          <ion-icon slot="icon-only" name="checkmark"></ion-icon>
-        </ion-item-option>
-      </ion-item-options>
-    </ion-item-sliding>
-
-    <ion-item *ngIf="medicamentosHoje.length === 0" lines="none">
-      <ion-label class="ion-text-center" color="medium">
-        <h2>Nenhum medicamento para hoje 🎉</h2>
-        <p>Toque em "Adicionar Novo Remédio" para começar</p>
-      </ion-label>
-    </ion-item>
-  </ion-list>
-
-  <!-- Botão de ação -->
-  <div style="padding: 20px;">
-    <ion-button expand="block" class="btn-large" color="primary" (click)="adicionarMedicamento()">
-      <ion-icon slot="start" name="add-circle"></ion-icon>
-      Adicionar Novo Remédio
-    </ion-button>
-  </div>
-
-  <!-- Card de dica -->
-  <div class="card-dinda" style="margin-top: 24px;">
-    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-      <ion-icon name="bulb" color="secondary" class="icon-large"></ion-icon>
-      <h3 style="font-size: 20px; font-weight: 600; color: #2d5f8d; margin: 0;">
-        Dica da Dinda
-      </h3>
-    </div>
-    <p style="font-size: 18px; line-height: 1.8; color: #333; margin: 0;">
-      Lembre-se de beber bastante água ao tomar seus medicamentos.
-      Isso ajuda na absorção e previne efeitos colaterais.
-    </p>
-  </div>
-
-  <!-- Espaçamento final -->
-  <div style="height: 40px;"></div>
 </ion-content>

@@ -14,6 +14,7 @@ import { MedicamentoService } from './medicamento';
 import { AuthService } from './auth';
 import { FaqService } from './faq';
 import { InteracaoService } from './interacao';
+import { DicaService } from './dica';
 
 /**
  * Estado de sincronização da aplicação
@@ -58,7 +59,8 @@ export class SyncService {
     private medicamentoService: MedicamentoService,
     private authService: AuthService,
     private faqService: FaqService,
-    private interacaoService: InteracaoService
+    private interacaoService: InteracaoService,
+    private dicaService: DicaService
   ) {
     this.initNetworkMonitoring();
     this.initAuthMonitoring();
@@ -326,6 +328,7 @@ export class SyncService {
       const url = `${this.API_URL}/dica`;
       const response = await this.http.get<any[]>(url, { headers }).toPromise();
       if (response) {
+        await this.dicaService.mesclarDoServidor(response);
         console.log(`📥 Baixadas ${response.length} dicas`);
       }
     } catch (error) {
