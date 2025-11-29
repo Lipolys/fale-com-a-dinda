@@ -176,9 +176,9 @@ export class InteracaoService {
 
         const atualizado: InteracaoLocal = {
             ...interacao,
+            ...markAsUpdated(interacao),
             descricao: dados.descricao,
-            gravidade: dados.gravidade,
-            ...markAsUpdated(interacao)
+            gravidade: dados.gravidade
         };
 
         await this.storage.setInCollection(STORAGE_KEYS.INTERACOES, uuid, atualizado);

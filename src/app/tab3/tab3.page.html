@@ -52,7 +52,7 @@
             <h2>{{ faq.pergunta }}</h2>
             <p>{{ faq.resposta }}</p>
           </ion-label>
-          @if (faq.syncStatus !== 'SYNCED') {
+          @if (faq.syncStatus !== SyncStatus.SYNCED) {
           <ion-icon name="cloud-offline-outline" slot="end" color="warning"></ion-icon>
           }
         </ion-item>

@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { ModalController, AlertController, ToastController } from '@ionic/angular';
+import { ModalController, AlertController, ToastController, IonicModule } from '@ionic/angular';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { InteracaoService } from '../services/interacao';
 import { MedicamentoService } from '../services/medicamento';
 import { InteracaoLocal, MedicamentoLocal } from '../models/local.models';
@@ -8,6 +10,8 @@ import { InteracaoLocal, MedicamentoLocal } from '../models/local.models';
     selector: 'app-interacoes-manager',
     templateUrl: './interacoes-manager.page.html',
     styleUrls: ['./interacoes-manager.page.scss'],
+    standalone: true,
+    imports: [CommonModule, FormsModule, IonicModule]
 })
 export class InteracoesManagerPage implements OnInit {
 

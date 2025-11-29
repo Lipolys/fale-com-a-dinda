@@ -81,8 +81,8 @@ export class DicaService {
 
         const atualizada: DicaLocal = {
             ...dica,
-            texto,
-            ...markAsUpdated(dica)
+            ...markAsUpdated(dica),
+            texto
         };
 
         await this.storage.setInCollection(STORAGE_KEYS.DICAS, uuid, atualizada);

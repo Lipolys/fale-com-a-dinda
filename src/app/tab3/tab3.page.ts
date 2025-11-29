@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FaqService } from '../services/faq';
-import { FaqLocal } from '../models/local.models';
+import { FaqLocal, SyncStatus } from '../models/local.models';
 import { AuthService } from '../services/auth';
 import { AlertController, ToastController, LoadingController } from '@ionic/angular';
 import { TipoUsuario } from '../models/auth.model';
@@ -12,6 +12,9 @@ import { TipoUsuario } from '../models/auth.model';
   standalone: false,
 })
 export class Tab3Page implements OnInit {
+
+  // Expose enum to template
+  public readonly SyncStatus = SyncStatus;
 
   faqs: FaqLocal[] = [];
   tipoUsuario: TipoUsuario | null = null;

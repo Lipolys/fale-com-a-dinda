@@ -152,7 +152,7 @@
           <p class="ion-text-wrap" style="font-size: 12px;">{{ med.descricao }}</p>
           }
         </ion-label>
-        @if (med.syncStatus !== 'SYNCED') {
+        @if (med.syncStatus !== SyncStatus.SYNCED) {
         <ion-icon name="cloud-offline-outline" slot="end" color="warning"></ion-icon>
         }
       </ion-item>

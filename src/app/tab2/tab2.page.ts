@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { AlertController, LoadingController, ToastController, ModalController } from '@ionic/angular';
-import { MinistraLocal, MedicamentoLocal } from '../models/local.models';
+import { MinistraLocal, MedicamentoLocal, SyncStatus } from '../models/local.models';
 import { AuthService } from '../services/auth';
 import { MinistraService } from '../services/ministra';
 import { MedicamentoService } from '../services/medicamento';
@@ -16,6 +16,9 @@ import { Subscription } from 'rxjs';
   standalone: false,
 })
 export class Tab2Page implements OnInit, OnDestroy {
+
+  // Expose enum to template
+  public readonly SyncStatus = SyncStatus;
 
   public ministracoes: MinistraLocal[] = [];
   public medicamentosDisponiveis: MedicamentoLocal[] = [];

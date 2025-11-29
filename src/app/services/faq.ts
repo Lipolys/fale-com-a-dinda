@@ -85,9 +85,9 @@ export class FaqService {
 
         const atualizado: FaqLocal = {
             ...faq,
+            ...markAsUpdated(faq),
             pergunta: dto.pergunta,
-            resposta: dto.resposta,
-            ...markAsUpdated(faq)
+            resposta: dto.resposta
         };
 
         await this.storage.setInCollection(STORAGE_KEYS.FAQS, uuid, atualizado);
