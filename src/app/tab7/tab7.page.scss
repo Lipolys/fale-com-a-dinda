@@ -1,0 +1,179 @@
+// Estilos da Tab7 - Interações Medicamentosas Educativas
+
+// Banner informativo
+.info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
+  border-radius: 12px;
+  margin-bottom: 20px;
+
+  ion-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .info-text {
+    flex: 1;
+
+    strong {
+      display: block;
+      font-size: 16px;
+      color: var(--ion-color-primary);
+      margin-bottom: 4px;
+    }
+
+    p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin: 0;
+      line-height: 1.5;
+    }
+  }
+}
+
+// Item do medicamento
+.med-item {
+  --min-height: 70px;
+
+  h2 {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  p {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+}
+
+// Conteúdo do acordeão
+.accordion-content {
+  background: var(--ion-background-color);
+}
+
+// Lista de interações
+.interacoes-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+// Card de interação
+.interacao-card {
+  background: var(--card-background);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  .interacao-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+
+    .medicamentos-envolvidos {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      ion-icon {
+        font-size: 20px;
+      }
+
+      .outro-med {
+        font-weight: 600;
+        font-size: 15px;
+        color: var(--text-primary);
+      }
+    }
+
+    ion-badge {
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 8px;
+    }
+  }
+
+  .interacao-descricao {
+    p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin: 0;
+      line-height: 1.6;
+    }
+  }
+}
+
+// Estado sem interações
+.sem-interacoes {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(var(--ion-color-success-rgb), 0.1);
+  border-radius: 12px;
+
+  ion-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+  }
+
+  p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+}
+
+// Descrição do medicamento
+.med-descricao {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+
+  h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+  }
+
+  p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+  }
+}
+
+// Empty state customizado
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+
+  ion-icon {
+    font-size: 64px;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    margin-bottom: 16px;
+  }
+
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+  }
+
+  p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+}

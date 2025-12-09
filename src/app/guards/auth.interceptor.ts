@@ -74,14 +74,19 @@ export class AuthInterceptor implements HttpInterceptor {
           }
 
           // Refresh falhou, desloga
+          // Suppress error message to avoid "Token expired" alert
           return from(this.authService.logout()).pipe(
-            switchMap(() => throwError(() => new Error('Sessão expirada')))
+            switchMap(() => {
+              // Retorna um observable vazio ou um erro tratado para não disparar alertas globais
+              // Se preferir lançar erro, lance um com mensagem amigável
+              return throwError(() => new Error('Sessão expirada. Por favor, faça login novamente.'));
+            })
           );
         }),
         catchError(err => {
           this.isRefreshing = false;
           return from(this.authService.logout()).pipe(
-            switchMap(() => throwError(() => err))
+            switchMap(() => throwError(() => new Error('Sessão expirada. Por favor, faça login novamente.')))
           );
         })
       );

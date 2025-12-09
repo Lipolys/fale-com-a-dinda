@@ -283,8 +283,9 @@ export class Tab2Page implements OnInit, OnDestroy {
       await this.ministraService.editar(uuid, {
         horario: dados.horario || null,
         dosagem: dados.dosagem || null,
-        frequencia: dados.frequencia ? parseInt(dados.frequencia) : undefined,
-        status: parseInt(dados.status)
+        frequencia: dados.frequencia ? parseInt(dados.frequencia) : null,
+        status: Number(dados.status),
+        medicamento_uuid: dados.medicamento_uuid // Include if medication can be changed
       });
 
       await this.mostrarToast('Remédio atualizado com sucesso! ✅', 'success');
@@ -351,12 +352,17 @@ export class Tab2Page implements OnInit, OnDestroy {
   }
 
   getStatusTexto(status: number): string {
-    return status === 1 ? 'Ativo' : 'Inativo';
+    return status == 1 ? 'Ativo' : 'Inativo';
   }
 
   getStatusCor(status: number): string {
-    return status === 1 ? 'success' : 'medium';
+    return status == 1 ? 'success' : 'medium';
   }
+
+  isAtivo(status: number): boolean {
+    return status == 1;
+  }
+
 
   private async mostrarToast(
     mensagem: string,

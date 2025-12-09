@@ -1,0 +1,109 @@
+<ion-header [translucent]="true" class="header-dinda">
+    <ion-toolbar>
+        <ion-title>
+            💊 Interações Medicamentosas
+        </ion-title>
+    </ion-toolbar>
+    <ion-toolbar>
+        <ion-searchbar placeholder="Buscar medicamento..." [debounce]="300" (ionInput)="onSearchChange($event)"
+            animated="true" showCancelButton="focus" cancelButtonText="Limpar">
+        </ion-searchbar>
+    </ion-toolbar>
+</ion-header>
+
+<ion-content>
+    <div class="ion-padding">
+
+        <!-- Header educativo -->
+        <div class="info-banner">
+            <ion-icon name="information-circle" color="primary"></ion-icon>
+            <div class="info-text">
+                <strong>Consulta Educativa</strong>
+                <p>Veja como os medicamentos podem interagir entre si. Em caso de dúvidas, consulte seu farmacêutico ou
+                    médico.</p>
+            </div>
+        </div>
+
+        <!-- Empty state - nenhum medicamento -->
+        @if (medicamentosFiltrados.length === 0 && termoBusca) {
+        <div class="empty-state">
+            <ion-icon name="search-outline"></ion-icon>
+            <h3>Nenhum medicamento encontrado</h3>
+            <p>Tente buscar por outro nome ou classe.</p>
+        </div>
+        }
+
+        @if (medicamentos.length === 0 && !termoBusca) {
+        <div class="empty-state">
+            <ion-icon name="medkit-outline"></ion-icon>
+            <h3>Nenhum medicamento cadastrado</h3>
+            <p>Aguarde a sincronização ou contate o farmacêutico.</p>
+        </div>
+        }
+
+        <!-- Lista de medicamentos -->
+        @if (medicamentosFiltrados.length > 0) {
+        <ion-accordion-group>
+            @for (med of medicamentosFiltrados; track med.uuid) {
+            <ion-accordion [value]="med.uuid">
+                <ion-item slot="header" color="light" class="med-item">
+                    <ion-icon name="medical" slot="start" color="primary"></ion-icon>
+                    <ion-label>
+                        <h2>{{ med.nome }}</h2>
+                        <p>{{ med.classe }}</p>
+                    </ion-label>
+                    @if (temInteracoes(med.uuid)) {
+                    <ion-badge color="warning" slot="end">
+                        {{ contarInteracoes(med.uuid) }} interação{{ contarInteracoes(med.uuid) > 1 ? 'ões' : '' }}
+                    </ion-badge>
+                    } @else {
+                    <ion-badge color="success" slot="end">
+                        Sem interações
+                    </ion-badge>
+                    }
+                </ion-item>
+
+                <div class="ion-padding accordion-content" slot="content">
+                    <!-- Interações do medicamento -->
+                    @if (temInteracoes(med.uuid)) {
+                    <div class="interacoes-lista">
+                        @for (interacao of getInteracoesMedicamento(med.uuid); track interacao.uuid) {
+                        <div class="interacao-card">
+                            <div class="interacao-header">
+                                <div class="medicamentos-envolvidos">
+                                    <ion-icon name="git-network"
+                                        [color]="getCorGravidade(interacao.gravidade)"></ion-icon>
+                                    <span class="outro-med">{{ getOutroMedicamento(interacao, med.uuid) }}</span>
+                                </div>
+                                <ion-badge [color]="getCorGravidade(interacao.gravidade)">
+                                    {{ getTextoGravidade(interacao.gravidade) }}
+                                </ion-badge>
+                            </div>
+                            <div class="interacao-descricao">
+                                <p>{{ interacao.descricao }}</p>
+                            </div>
+                        </div>
+                        }
+                    </div>
+                    } @else {
+                    <div class="sem-interacoes">
+                        <ion-icon name="checkmark-circle" color="success"></ion-icon>
+                        <p>Este medicamento não possui interações conhecidas cadastradas.</p>
+                    </div>
+                    }
+
+                    <!-- Descrição do medicamento -->
+                    @if (med.descricao) {
+                    <div class="med-descricao">
+                        <h4>Sobre o medicamento</h4>
+                        <p>{{ med.descricao }}</p>
+                    </div>
+                    }
+                </div>
+            </ion-accordion>
+            }
+        </ion-accordion-group>
+        }
+
+    </div>
+</ion-content>

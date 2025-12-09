@@ -51,7 +51,7 @@
       <ion-item class="list-item-dinda" button (click)="editarMinistracao(ministracao)">
 
         <!-- Ícone de status -->
-        <ion-icon slot="start" [name]="ministracao.status === 1 ? 'checkmark-circle' : 'close-circle'"
+        <ion-icon slot="start" [name]="isAtivo(ministracao.status) ? 'checkmark-circle' : 'close-circle'"
           [color]="getStatusCor(ministracao.status)" class="icon-large"></ion-icon>
 
         <!-- Informações do medicamento -->

@@ -90,7 +90,9 @@ Gerenciamento de contas de usuários (Clientes e Farmacêuticos).
 
 ### 2. Dicas de Saúde (`/dica`)
 
-Dicas cadastradas por farmacêuticos.
+Dicas cadastradas por farmacêuticos para orientar clientes.
+
+**IMPORTANTE:** Dicas contêm apenas TEXTO (sem título). O envio de notificações aos clientes é gerenciado localmente no aplicativo, não há endpoint de notificação no servidor.
 
 #### Listar Dicas
 *   **Método**: `GET`
@@ -98,6 +100,26 @@ Dicas cadastradas por farmacêuticos.
 *   **Acesso**: Autenticado (Qualquer usuário logado)
 *   **Respostas**:
     *   `200 OK`: Lista de dicas com dados do farmacêutico autor.
+    *   **Exemplo de Resposta**:
+        ```json
+        [
+          {
+            "iddica": 1,
+            "texto": "Beba 2 litros de água por dia para manter a hidratação.",
+            "farmaceutico": {
+              "idfarmaceutico": 1,
+              "crf": "12345",
+              "usuario": {
+                "idusuario": 2,
+                "nome": "Dr. João Silva",
+                "email": "joao@farmacia.com"
+              }
+            },
+            "createdAt": "2025-01-15T10:00:00.000Z",
+            "updatedAt": "2025-01-15T10:00:00.000Z"
+          }
+        ]
+        ```
 
 #### Criar Dica
 *   **Método**: `POST`
@@ -106,28 +128,37 @@ Dicas cadastradas por farmacêuticos.
 *   **Corpo da Requisição (JSON)**:
     ```json
     {
-      "texto": "Beba 2 litros de água por dia."
+      "texto": "Beba 2 litros de água por dia para manter a hidratação."
     }
     ```
 *   **Respostas**:
-    *   `201 Created`: Dica criada.
-    *   `403 Forbidden`: Apenas farmacêuticos podem criar.
+    *   `201 Created`: Dica criada com sucesso.
+    *   `400 Bad Request`: Campo 'texto' obrigatório faltando.
+    *   `403 Forbidden`: Apenas farmacêuticos podem criar dicas.
 
 #### Editar Dica
 *   **Método**: `PUT`
 *   **URL**: `/dica/:id`
-*   **Acesso**: Farmacêutico (Apenas o autor)
+*   **Acesso**: Farmacêutico (Apenas o autor da dica)
 *   **Corpo da Requisição (JSON)**:
     ```json
     {
-      "texto": "Texto atualizado da dica."
+      "texto": "Texto atualizado da dica de saúde."
     }
     ```
+*   **Respostas**:
+    *   `200 OK`: Dica atualizada com sucesso.
+    *   `403 Forbidden`: Apenas o autor pode editar.
+    *   `404 Not Found`: Dica não encontrada.
 
 #### Deletar Dica
 *   **Método**: `DELETE`
 *   **URL**: `/dica/:id`
-*   **Acesso**: Farmacêutico (Apenas o autor)
+*   **Acesso**: Farmacêutico (Apenas o autor da dica)
+*   **Respostas**:
+    *   `200 OK`: Dica deletada com sucesso.
+    *   `403 Forbidden`: Apenas o autor pode deletar.
+    *   `404 Not Found`: Dica não encontrada.
 
 ---
 

@@ -142,6 +142,18 @@ export class SyncService {
   }
 
   /**
+   * Notifica que houve mudança nos dados locais e tenta sincronizar imediatamente
+   */
+  public notifyDataChanged(): void {
+    if (this.canSync()) {
+      console.log('🔔 Dados alterados, tentando sincronizar imediatamente...');
+      this.syncAll();
+    } else {
+      console.log('⏳ Dados alterados, mas sem conexão ou já sincronizando. Aguardando auto-sync.');
+    }
+  }
+
+  /**
    * Obtém headers HTTP com token de autenticação
    */
   private async getHeaders(): Promise<HttpHeaders> {
@@ -256,15 +268,31 @@ export class SyncService {
   private async syncCreate(entity: string, uuid: string, data: any, headers: HttpHeaders): Promise<void> {
     const url = `${this.API_URL}/${entity}`;
     console.log(`📤 POST ${url}`, data);
-    const response = await this.http.post<any>(url, data, { headers }).toPromise();
-    const collectionKey = this.getCollectionKey(entity);
-    const localItem = await this.storage.getFromCollection<BaseLocalModel>(collectionKey, uuid);
-    if (localItem) {
-      // Determina o serverId baseado na entidade
-      const serverId = response.idministra || response.idmedicamento || response.idfaq || response.iddica || response.id;
-      const updated = markAsSynced(localItem, serverId);
-      await this.storage.setInCollection(collectionKey, uuid, updated);
-      console.log(`✅ ${entity} ${uuid} sincronizado com serverId: ${serverId}`);
+
+    try {
+      const response = await this.http.post<any>(url, data, { headers }).toPromise();
+      const collectionKey = this.getCollectionKey(entity);
+
+      // Re-fetch item to ensure we have the latest version (avoid overwriting concurrent local updates)
+      const localItem = await this.storage.getFromCollection<BaseLocalModel>(collectionKey, uuid);
+
+      if (localItem) {
+        // Determina o serverId baseado na entidade
+        const serverId = response.idministra || response.idmedicamento || response.idfaq || response.iddica || response.id;
+
+        if (serverId) {
+          const updated = markAsSynced(localItem, serverId);
+          await this.storage.setInCollection(collectionKey, uuid, updated);
+          console.log(`✅ ${entity} ${uuid} sincronizado com serverId: ${serverId}`);
+        } else {
+          console.warn(`⚠️ Resposta do servidor para ${entity} não retornou ID.`, response);
+        }
+      } else {
+        console.warn(`⚠️ Item local ${uuid} não encontrado após syncCreate.`);
+      }
+    } catch (error) {
+      console.error(`❌ Falha no POST ${entity}:`, error);
+      throw error;
     }
   }
 

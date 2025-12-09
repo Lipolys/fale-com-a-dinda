@@ -1,0 +1,81 @@
+<ion-header [translucent]="true" class="header-dinda">
+  <ion-toolbar>
+    <ion-title>💡 Gerenciar Dicas</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Botão para criar nova dica -->
+  <div class="create-button-container">
+    <ion-button expand="block" (click)="criarDica()" [disabled]="loading">
+      <ion-icon slot="start" name="add-circle"></ion-icon>
+      Nova Dica
+    </ion-button>
+  </div>
+
+  <!-- Loading spinner -->
+  <div *ngIf="loading" class="loading-container">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Carregando...</p>
+  </div>
+
+  <!-- Lista de dicas -->
+  <ion-list *ngIf="!loading && dicas.length > 0">
+    <ion-item-sliding *ngFor="let dica of dicas">
+      <ion-item button (click)="enviarNotificacao(dica)">
+        <ion-icon slot="start" name="bulb" color="warning"></ion-icon>
+        <ion-label>
+          <p>{{ dica.texto }}</p>
+          <p class="text-muted">
+            <ion-text color="medium">
+              <small>Criada em: {{ dica.createdAt | date:'dd/MM/yyyy HH:mm' }}</small>
+            </ion-text>
+          </p>
+        </ion-label>
+      </ion-item>
+
+      <!-- Opções de deslizar -->
+      <ion-item-options side="end">
+        <ion-item-option color="primary" (click)="editarDica(dica)">
+          <ion-icon slot="icon-only" name="create"></ion-icon>
+        </ion-item-option>
+        <ion-item-option color="success" (click)="enviarNotificacao(dica)">
+          <ion-icon slot="icon-only" name="send"></ion-icon>
+        </ion-item-option>
+        <ion-item-option color="danger" (click)="confirmarDeletar(dica)">
+          <ion-icon slot="icon-only" name="trash"></ion-icon>
+        </ion-item-option>
+      </ion-item-options>
+    </ion-item-sliding>
+  </ion-list>
+
+  <!-- Estado vazio -->
+  <div *ngIf="!loading && dicas.length === 0" class="empty-state">
+    <ion-icon name="bulb-outline" color="medium"></ion-icon>
+    <h2>Nenhuma dica cadastrada</h2>
+    <p>Comece criando uma nova dica de saúde para seus clientes!</p>
+  </div>
+
+  <!-- Informações de uso -->
+  <ion-card class="info-card" *ngIf="!loading">
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="information-circle" color="primary"></ion-icon>
+        Como funciona
+      </ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ul>
+        <li><strong>Toque</strong> em uma dica para enviar notificação</li>
+        <li><strong>Deslize para a esquerda</strong> para ver mais opções</li>
+        <li><strong>Editar:</strong> Altere o texto da dica</li>
+        <li><strong>Enviar:</strong> Notifique clientes selecionados</li>
+        <li><strong>Excluir:</strong> Remova dicas antigas</li>
+      </ul>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

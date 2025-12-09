@@ -1,11 +1,11 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { AlertController, ToastController, NavController, ModalController } from '@ionic/angular';
+import { AlertController, ToastController, NavController } from '@ionic/angular';
 import { MinistraService } from '../services/ministra';
-import { MinistraLocal } from '../models/local.models';
+import { MinistraLocal, InteracaoLocal } from '../models/local.models';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../services/auth';
 import { TipoUsuario } from '../models/auth.model';
-import { InteracoesManagerPage } from '../interacoes-manager/interacoes-manager.page';
+import { InteracaoService } from '../services/interacao';
 
 interface MedicamentoView {
   ministracao: MinistraLocal;
@@ -26,6 +26,7 @@ export class Tab1Page implements OnInit, OnDestroy {
 
   medicamentosHoje: MedicamentoView[] = [];
   tipoUsuario: TipoUsuario | null = null;
+  interacoesUsuario: InteracaoLocal[] = [];
   private subscription?: Subscription;
 
   constructor(
@@ -34,7 +35,7 @@ export class Tab1Page implements OnInit, OnDestroy {
     private ministraService: MinistraService,
     private navCtrl: NavController,
     private authService: AuthService,
-    private modalCtrl: ModalController
+    private interacaoService: InteracaoService
   ) { }
 
   async ngOnInit() {
@@ -64,7 +65,7 @@ export class Tab1Page implements OnInit, OnDestroy {
     const hoje = new Date().toISOString().split('T')[0];
 
     // Filtra apenas ativos (status 1)
-    const ativos = ministracoes.filter(m => m.status === 1);
+    const ativos = ministracoes.filter(m => m.status == 1);
 
     this.medicamentosHoje = ativos.map(m => {
       let status: 'tomado' | 'proximo' | 'pendente' | 'atrasado' = 'pendente';
@@ -110,6 +111,23 @@ export class Tab1Page implements OnInit, OnDestroy {
         icone
       };
     }).sort((a, b) => a.horario.localeCompare(b.horario));
+
+    // Verificar interações medicamentosas
+    this.verificarInteracoesUsuario(ativos);
+  }
+
+  async verificarInteracoesUsuario(ministracoes: MinistraLocal[]) {
+    // Extrair UUIDs únicos dos medicamentos ativos
+    const medicamentosUuids = [...new Set(ministracoes.map(m => m.medicamento_uuid))];
+
+    if (medicamentosUuids.length < 2) {
+      // Sem interações se o usuário toma menos de 2 medicamentos diferentes
+      this.interacoesUsuario = [];
+      return;
+    }
+
+    // Buscar interações entre os medicamentos do usuário
+    this.interacoesUsuario = await this.interacaoService.buscarInteracoesEntreMedicamentos(medicamentosUuids);
   }
 
   async marcarComoTomado(item: MedicamentoView) {
@@ -204,15 +222,11 @@ export class Tab1Page implements OnInit, OnDestroy {
   }
 
   gerenciarDicas() {
-    // Implementar navegação para gerenciamento de dicas
-    console.log('Gerenciar Dicas');
+    this.navCtrl.navigateForward('app/tab6');
   }
 
-  async gerenciarInteracoes() {
-    const modal = await this.modalCtrl.create({
-      component: InteracoesManagerPage
-    });
-    await modal.present();
+  gerenciarInteracoes() {
+    this.navCtrl.navigateForward('app/tab5');
   }
 
 }

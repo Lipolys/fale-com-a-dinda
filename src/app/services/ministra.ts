@@ -3,9 +3,11 @@ import { BehaviorSubject } from 'rxjs';
 import { StorageService, STORAGE_KEYS } from './storage';
 import { AuthService } from './auth';
 import { MedicamentoService } from './medicamento';
+import { SyncService } from './sync';
 import {
   MinistraLocal,
   CriarMinistraLocalDTO,
+  EditarMinistraLocalDTO,
   createBaseModel,
   generateUUID,
   now,
@@ -31,7 +33,8 @@ export class MinistraService {
   constructor(
     private storage: StorageService,
     private authService: AuthService,
-    private medicamentoService: MedicamentoService
+    private medicamentoService: MedicamentoService,
+    private syncService: SyncService
   ) {
     // Limpa itens inválidos da fila de sincronização ao iniciar
     this.storage.cleanInvalidMinistraQueue().catch(err =>
@@ -143,6 +146,9 @@ export class MinistraService {
     // 4. Atualiza Observable
     await this.carregarMinistra();
 
+    // 5. Notifica mudança para sync instantâneo
+    this.syncService.notifyDataChanged();
+
     return ministra;
   }
 
@@ -168,7 +174,7 @@ export class MinistraService {
    */
   public async editar(
     uuid: string,
-    dados: Partial<CriarMinistraLocalDTO & { status: number }>
+    dados: EditarMinistraLocalDTO
   ): Promise<MinistraLocal | null> {
 
     // 1. Busca ministração local
@@ -179,14 +185,27 @@ export class MinistraService {
       return null;
     }
 
-    // 2. Atualiza dados
+    // 2. Atualiza APENAS os campos editáveis (não sobrescrever tudo)
     const atualizado: MinistraLocal = {
       ...ministra,
-      ...dados,
-      ...markAsUpdated(ministra)
+      ...markAsUpdated(ministra),
+      // Aplica as mudanças depois do markAsUpdated para não serem sobrescritas
+      ...(dados.horario !== undefined && { horario: dados.horario }),
+      ...(dados.dosagem !== undefined && { dosagem: dados.dosagem }),
+      ...(dados.frequencia !== undefined && { frequencia: dados.frequencia }),
+      ...(dados.status !== undefined && { status: Number(dados.status) })
     };
 
-    // TODO: Atualizar dados desnormalizados (medicamento_nome) se o uuid mudou
+    // Se o medicamento_uuid mudou, atualizar dados desnormalizados
+    if (dados.medicamento_uuid && dados.medicamento_uuid !== ministra.medicamento_uuid) {
+      const medicamento = await this.medicamentoService.buscarPorUuid(dados.medicamento_uuid);
+      if (medicamento) {
+        atualizado.medicamento_uuid = dados.medicamento_uuid;
+        atualizado.medicamento_nome = medicamento.nome;
+        atualizado.medicamento_descricao = medicamento.descricao;
+        atualizado.medicamento_classe = medicamento.classe;
+      }
+    }
 
     // 3. Salva no storage
     await this.storage.setInCollection(
@@ -206,7 +225,7 @@ export class MinistraService {
           horario: atualizado.horario,
           dosagem: atualizado.dosagem,
           frequencia: atualizado.frequencia,
-          status: atualizado.status
+          status: Number(atualizado.status)
         },
         timestamp: now(),
         retries: 0,
@@ -217,7 +236,10 @@ export class MinistraService {
     // 5. Atualiza Observable
     await this.carregarMinistra();
 
-    console.log(`✅ Ministração ${uuid} atualizada localmente`);
+    // 6. Notifica mudança para sync instantâneo
+    this.syncService.notifyDataChanged();
+
+    console.log(`✅ Ministração ${uuid} atualizada localmente`, atualizado);
     return atualizado;
   }
 
@@ -292,6 +314,9 @@ export class MinistraService {
     // 5. Atualiza Observable (remove da lista visível)
     await this.carregarMinistra();
 
+    // 6. Notifica mudança para sync instantâneo
+    this.syncService.notifyDataChanged();
+
     console.log(`✅ Ministração ${uuid} marcada para deleção`);
     return true;
   }
@@ -318,6 +343,9 @@ export class MinistraService {
 
     console.log(`📥 Mesclando ${apiData.length} ministrações do servidor`);
 
+    // Busca todas as ministrações locais para deduplicação
+    const locais = await this.storage.getCollectionAsArray<MinistraLocal>(STORAGE_KEYS.MINISTRA);
+
     for (const apiItem of apiData) {
       // Busca o medicamento pelo serverId para obter o UUID local
       const medicamento = await this.medicamentoService.buscarPorServerId(apiItem.medicamento_idmedicamento);
@@ -327,21 +355,40 @@ export class MinistraService {
         continue;
       }
 
-      // Busca se já existe localmente pelo serverId
-      const existente = await this.buscarPorServerId(apiItem.idministra);
+      // 1. Tenta encontrar por serverId (já sincronizado)
+      let existente = locais.find(m => m.serverId === apiItem.idministra);
+
+      // 2. Se não achou, tenta encontrar um item local NÃO sincronizado que seja "igual" (Deduplicação)
+      if (!existente) {
+        existente = locais.find(m =>
+          !m.serverId && // Não tem ID do servidor
+          m.medicamento_uuid === medicamento.uuid && // Mesmo medicamento
+          m.horario === apiItem.horario && // Mesmo horário
+          m.cliente_uuid === this.clienteUuid // Mesmo cliente
+          // Poderia adicionar mais campos para garantir, mas horário+medicamento é um bom identificador único lógico
+        );
+
+        if (existente) {
+          console.log(`🔗 Item local ${existente.uuid} vinculado ao serverId ${apiItem.idministra} (Deduplicação)`);
+        }
+      }
 
       if (existente) {
-        // Atualiza se o servidor tem versão mais nova
+        // Atualiza se o servidor tem versão mais nova OU se acabamos de vincular (deduplicar)
         const serverTime = new Date(apiItem.updatedAt || apiItem.createdAt).getTime();
         const localTime = new Date(existente.serverUpdatedAt || existente.updatedAt).getTime();
 
-        if (serverTime > localTime) {
+        // Se acabamos de vincular (não tinha serverId), forçamos a atualização para garantir consistência
+        const isLinking = !existente.serverId;
+
+        if (isLinking || serverTime > localTime) {
           const atualizado = {
             ...existente,
+            serverId: apiItem.idministra, // Garante que o ID do servidor está setado
             horario: apiItem.horario,
             dosagem: apiItem.dosagem,
             frequencia: apiItem.frequencia,
-            status: apiItem.status,
+            status: Number(apiItem.status),
             medicamento_nome: apiItem.medicamento?.nome,
             medicamento_descricao: apiItem.medicamento?.descricao,
             medicamento_classe: apiItem.medicamento?.classe,
@@ -365,7 +412,7 @@ export class MinistraService {
           horario: apiItem.horario,
           dosagem: apiItem.dosagem,
           frequencia: apiItem.frequencia,
-          status: apiItem.status,
+          status: Number(apiItem.status),
           medicamento_nome: apiItem.medicamento?.nome,
           medicamento_descricao: apiItem.medicamento?.descricao,
           medicamento_classe: apiItem.medicamento?.classe,

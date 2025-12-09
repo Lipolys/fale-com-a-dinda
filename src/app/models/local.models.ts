@@ -80,9 +80,17 @@ export interface MinistraLocal extends BaseLocalModel {
 
 export interface CriarMinistraLocalDTO {
   medicamento_uuid: string;
-  horario?: string;
-  dosagem?: string;
-  frequencia?: number;
+  horario?: string | null;
+  dosagem?: string | null;
+  frequencia?: number | null;
+  status?: number;
+}
+
+export interface EditarMinistraLocalDTO {
+  medicamento_uuid?: string;
+  horario?: string | null;
+  dosagem?: string | null;
+  frequencia?: number | null;
   status?: number;
 }
 
@@ -98,6 +106,35 @@ export interface DicaLocal extends BaseLocalModel {
   // Desnormalizado
   farmaceutico_nome?: string;
   farmaceutico_crf?: string;
+}
+
+export interface CriarDicaLocalDTO {
+  texto: string;
+  farmaceutico_uuid?: string;
+}
+
+// ==================== NOTIFICAÇÃO ====================
+
+export interface NotificacaoLocal extends BaseLocalModel {
+  // Relacionamentos
+  dica_uuid: string;
+  farmaceutico_uuid: string;
+  cliente_uuids: string[];  // Lista de UUIDs dos clientes destinatários
+
+  // Dados
+  enviado: boolean;
+  enviadoEm?: string;       // ISO timestamp de quando foi enviado
+  erroEnvio?: string;       // Mensagem de erro se houver
+
+  // Desnormalizado
+  dica_titulo?: string;
+  dica_texto?: string;
+}
+
+export interface CriarNotificacaoDTO {
+  dica_uuid: string;
+  cliente_uuids: string[];
+  enviarParaTodos?: boolean;
 }
 
 export interface CriarDicaLocalDTO {
@@ -386,7 +423,7 @@ export function ministraApiToLocal(
     horario: api.horario,
     dosagem: api.dosagem,
     frequencia: api.frequencia,
-    status: api.status,
+    status: Number(api.status),
     syncStatus: SyncStatus.SYNCED,
     syncedAt: now(),
     serverUpdatedAt: api.updatedAt || api.createdAt,

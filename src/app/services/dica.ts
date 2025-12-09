@@ -66,7 +66,9 @@ export class DicaService {
 
             const response = await this.http.post<any>(
                 `${this.API_URL}/dica`,
-                { texto: dto.texto },
+                {
+                    texto: dto.texto
+                },
                 { headers }
             ).toPromise();
 

@@ -337,6 +337,7 @@ export const STORAGE_KEYS = {
   DICAS: 'dicas',
   FAQS: 'faqs',
   INTERACOES: 'interacoes',
+  NOTIFICACOES: 'notificacoes',
 
   // Sincronização
   SYNC_QUEUE: 'sync_queue',

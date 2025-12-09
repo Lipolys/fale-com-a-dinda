@@ -1,8 +1,7 @@
-<ion-header [translucent]="true">
-  <ion-toolbar class="toolbar-dinda">
+<ion-header [translucent]="true" class="header-dinda">
+  <ion-toolbar>
     <ion-title>
-      <span class="toolbar-icon">⚠️</span>
-      Gerenciar Interações
+      ⚠️ Gerenciar Interações
     </ion-title>
     <ion-buttons slot="end">
       <ion-button (click)="syncManual()">
@@ -20,11 +19,7 @@
 
   <!-- Botão para adicionar nova interação -->
   <div class="container" style="padding-top: 20px;">
-    <ion-button
-      expand="block"
-      size="large"
-      class="button-primary"
-      (click)="toggleFormulario()">
+    <ion-button expand="block" size="large" class="button-primary" (click)="toggleFormulario()">
       <ion-icon slot="start" [name]="mostrarFormulario ? 'close-circle' : 'add-circle'"></ion-icon>
       {{ mostrarFormulario ? 'Cancelar' : 'Nova Interação' }}
     </ion-button>
@@ -38,30 +33,20 @@
     <div class="form-section">
       <ion-label class="form-label">Medicamento 1 *</ion-label>
       <div style="position: relative;">
-        <ion-searchbar
-          [(ngModel)]="searchTerm1"
-          (ionInput)="filtrarMedicamentos1()"
-          placeholder="Buscar medicamento..."
-          [disabled]="!!medicamentoSelecionado1"
-          class="searchbar-dinda">
+        <ion-searchbar [(ngModel)]="searchTerm1" (ionInput)="filtrarMedicamentos1()" placeholder="Buscar medicamento..."
+          [disabled]="!!medicamentoSelecionado1" class="searchbar-dinda">
         </ion-searchbar>
 
         <!-- Botão limpar se já selecionou -->
-        <ion-button
-          *ngIf="medicamentoSelecionado1"
-          fill="clear"
-          size="small"
-          (click)="limparMedicamento1()"
+        <ion-button *ngIf="medicamentoSelecionado1" fill="clear" size="small" (click)="limparMedicamento1()"
           style="position: absolute; right: 8px; top: 8px; z-index: 10;">
           <ion-icon slot="icon-only" name="close-circle" color="danger"></ion-icon>
         </ion-button>
 
         <!-- Lista de resultados -->
-        <ion-list *ngIf="medicamentosFiltrados1.length > 0" style="margin-top: -12px; border-radius: 12px; overflow: hidden;">
-          <ion-item
-            *ngFor="let med of medicamentosFiltrados1"
-            button
-            (click)="selecionarMedicamento1(med)"
+        <ion-list *ngIf="medicamentosFiltrados1.length > 0"
+          style="margin-top: -12px; border-radius: 12px; overflow: hidden;">
+          <ion-item *ngFor="let med of medicamentosFiltrados1" button (click)="selecionarMedicamento1(med)"
             class="list-item-dinda">
             <ion-icon name="medical" slot="start" color="primary"></ion-icon>
             <ion-label>
@@ -83,30 +68,20 @@
     <div class="form-section">
       <ion-label class="form-label">Medicamento 2 *</ion-label>
       <div style="position: relative;">
-        <ion-searchbar
-          [(ngModel)]="searchTerm2"
-          (ionInput)="filtrarMedicamentos2()"
-          placeholder="Buscar medicamento..."
-          [disabled]="!!medicamentoSelecionado2"
-          class="searchbar-dinda">
+        <ion-searchbar [(ngModel)]="searchTerm2" (ionInput)="filtrarMedicamentos2()" placeholder="Buscar medicamento..."
+          [disabled]="!!medicamentoSelecionado2" class="searchbar-dinda">
         </ion-searchbar>
 
         <!-- Botão limpar se já selecionou -->
-        <ion-button
-          *ngIf="medicamentoSelecionado2"
-          fill="clear"
-          size="small"
-          (click)="limparMedicamento2()"
+        <ion-button *ngIf="medicamentoSelecionado2" fill="clear" size="small" (click)="limparMedicamento2()"
           style="position: absolute; right: 8px; top: 8px; z-index: 10;">
           <ion-icon slot="icon-only" name="close-circle" color="danger"></ion-icon>
         </ion-button>
 
         <!-- Lista de resultados -->
-        <ion-list *ngIf="medicamentosFiltrados2.length > 0" style="margin-top: -12px; border-radius: 12px; overflow: hidden;">
-          <ion-item
-            *ngFor="let med of medicamentosFiltrados2"
-            button
-            (click)="selecionarMedicamento2(med)"
+        <ion-list *ngIf="medicamentosFiltrados2.length > 0"
+          style="margin-top: -12px; border-radius: 12px; overflow: hidden;">
+          <ion-item *ngFor="let med of medicamentosFiltrados2" button (click)="selecionarMedicamento2(med)"
             class="list-item-dinda">
             <ion-icon name="medical" slot="start" color="primary"></ion-icon>
             <ion-label>
@@ -143,29 +118,18 @@
     <!-- Descrição -->
     <div class="form-section">
       <ion-label class="form-label">Descrição da Interação *</ion-label>
-      <ion-textarea
-        [(ngModel)]="descricao"
-        placeholder="Descreva os efeitos e riscos desta interação..."
-        rows="4"
+      <ion-textarea [(ngModel)]="descricao" placeholder="Descreva os efeitos e riscos desta interação..." rows="4"
         class="textarea-dinda">
       </ion-textarea>
     </div>
 
     <!-- Botões de ação -->
     <div style="display: flex; gap: 12px; margin-top: 20px;">
-      <ion-button
-        expand="block"
-        fill="outline"
-        (click)="limparFormulario()"
-        style="flex: 1;">
+      <ion-button expand="block" fill="outline" (click)="limparFormulario()" style="flex: 1;">
         <ion-icon slot="start" name="refresh"></ion-icon>
         Limpar
       </ion-button>
-      <ion-button
-        expand="block"
-        [disabled]="!podeSalvar()"
-        (click)="salvarInteracao()"
-        style="flex: 2;">
+      <ion-button expand="block" [disabled]="!podeSalvar()" (click)="salvarInteracao()" style="flex: 2;">
         <ion-icon slot="start" name="save"></ion-icon>
         Salvar Interação
       </ion-button>
@@ -190,7 +154,8 @@
     <ion-list *ngIf="interacoes.length > 0" class="list-spaced">
       <ion-item-sliding *ngFor="let interacao of interacoes">
         <ion-item class="list-item-dinda">
-          <ion-icon name="warning" [color]="getGravidadeCor(interacao.gravidade)" slot="start" class="icon-large"></ion-icon>
+          <ion-icon name="warning" [color]="getGravidadeCor(interacao.gravidade)" slot="start"
+            class="icon-large"></ion-icon>
 
           <ion-label>
             <h2 style="font-weight: 600; font-size: 18px; margin-bottom: 8px;">
@@ -225,4 +190,3 @@
   <!-- Espaçamento no final -->
   <div style="height: 80px;"></div>
 </ion-content>
-

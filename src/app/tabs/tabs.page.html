@@ -15,10 +15,22 @@
       <ion-label>Ajuda</ion-label>
     </ion-tab-button>
 
+    <!-- Tab7: Interações Educativas (apenas Cliente) -->
+    <ion-tab-button tab="tab7" *ngIf="!isFarmaceutico">
+      <ion-icon name="flask"></ion-icon>
+      <ion-label>Interações</ion-label>
+    </ion-tab-button>
+
     <!-- Tab5: Gerenciamento de Interações (apenas Farmacêutico) -->
     <ion-tab-button tab="tab5" *ngIf="isFarmaceutico">
       <ion-icon name="warning"></ion-icon>
       <ion-label>Interações</ion-label>
+    </ion-tab-button>
+
+    <!-- Tab6: Gerenciamento de Dicas (apenas Farmacêutico) -->
+    <ion-tab-button tab="tab6" *ngIf="isFarmaceutico">
+      <ion-icon name="bulb"></ion-icon>
+      <ion-label>Dicas</ion-label>
     </ion-tab-button>
 
     <ion-tab-button tab="tab4">

@@ -98,6 +98,38 @@ export class InteracaoService {
         return interacoesEncontradas;
     }
 
+    /**
+     * Busca interações existentes entre uma lista de medicamentos
+     * Retorna interações onde AMBOS os medicamentos estão na lista fornecida
+     */
+    public async buscarInteracoesEntreMedicamentos(uuids: string[]): Promise<InteracaoLocal[]> {
+        const todasInteracoes = await this.listar();
+        const interacoesEncontradas: InteracaoLocal[] = [];
+        const setUuids = new Set(uuids);
+
+        // Buscar todos os medicamentos para resolver nomes
+        const medicamentos = await this.medicamentoService.listar();
+        const mapUuidToNome = new Map<string, string>();
+        medicamentos.forEach(m => {
+            mapUuidToNome.set(m.uuid, m.nome);
+        });
+
+        todasInteracoes.forEach(i => {
+            // Verifica se AMBOS os medicamentos da interação estão na lista do usuário
+            if (setUuids.has(i.medicamento1_uuid) && setUuids.has(i.medicamento2_uuid)) {
+                // Resolver nomes dos medicamentos
+                const interacaoComNomes = {
+                    ...i,
+                    medicamento1_nome: mapUuidToNome.get(i.medicamento1_uuid) || 'Medicamento desconhecido',
+                    medicamento2_nome: mapUuidToNome.get(i.medicamento2_uuid) || 'Medicamento desconhecido'
+                };
+                interacoesEncontradas.push(interacaoComNomes);
+            }
+        });
+
+        return interacoesEncontradas;
+    }
+
     public async mesclarDoServidor(apiResponse: any[]): Promise<void> {
         // Preciso dos medicamentos para resolver IDs -> UUIDs e nomes
         const medicamentos = await this.medicamentoService.listar();

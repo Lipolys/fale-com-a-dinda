@@ -70,7 +70,7 @@ export class MinistracaoPage implements OnInit, OnDestroy {
     this.horario = this.ministracao.horario || '';
     this.dosagem = this.ministracao.dosagem || '';
     this.frequencia = this.ministracao.frequencia || null;
-    this.status = this.ministracao.status;
+    this.status = Number(this.ministracao.status);
 
     // Busca o medicamento selecionado
     const med = this.medicamentosDisponiveis.find(

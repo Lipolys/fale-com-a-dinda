@@ -10,16 +10,13 @@ import { IonicStorageModule } from "@ionic/storage-angular";
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AuthInterceptor } from './guards/auth.interceptor';
 
-import { InteracoesManagerPageModule } from './interacoes-manager/interacoes-manager.module';
-
 @NgModule({
   declarations: [AppComponent],
   imports: [
     BrowserModule,
     IonicModule.forRoot(),
     AppRoutingModule,
-    IonicStorageModule.forRoot(),
-    InteracoesManagerPageModule
+    IonicStorageModule.forRoot()
   ],
   providers: [provideHttpClient(), { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }, { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }],
   bootstrap: [AppComponent],
