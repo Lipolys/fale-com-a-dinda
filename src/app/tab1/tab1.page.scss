@@ -1,25 +1,14 @@
-// Variáveis de cores
-$primary: #6200ee;
-$secondary: #03dac6;
-$background: #f4f5f8;
-$card-bg: #ffffff;
-$text-primary: #1d1d1d;
-$text-secondary: #666666;
+// ===== IMPORTAR MIXINS =====
+@import "../../theme/mixins.scss";
 
-// Mixins
-@mixin card-shadow {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-}
+// ===== ESTILOS DA TAB1 =====
 
 ion-content {
-  --background: #{$background};
+  --background: var(--ion-background-color);
 }
 
 .header-toolbar {
-  --background: #{$card-bg};
-  --border-width: 0;
-  padding-top: 10px;
-  padding-bottom: 10px;
+  @include toolbar-standard;
 
   ion-title {
     padding-inline: 16px;
@@ -32,26 +21,26 @@ ion-content {
 
     .greeting {
       font-size: 14px;
-      color: $text-secondary;
+      color: var(--text-secondary);
       font-weight: 500;
     }
 
     .subtitle {
       font-size: 20px;
       font-weight: 700;
-      color: $text-primary;
+      color: var(--text-primary);
     }
   }
 
   .notification-btn {
     position: relative;
-    --color: #{$text-primary};
-    
+    --color: var(--text-primary);
+
     .badge {
       position: absolute;
       top: 8px;
       right: 8px;
-      background: #ff3b30;
+      background: var(--ion-color-danger);
       color: white;
       font-size: 10px;
       font-weight: bold;
@@ -69,13 +58,7 @@ ion-content {
 .main-content {
   // Estilos para o Cliente (Timeline)
   .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 80%;
-    padding: 32px;
-    text-align: center;
+    @include empty-state;
 
     img {
       width: 200px;
@@ -83,43 +66,26 @@ ion-content {
       opacity: 0.8;
     }
 
-    h3 {
-      font-size: 22px;
-      font-weight: 700;
-      color: $text-primary;
-      margin-bottom: 8px;
-    }
-
-    p {
-      color: $text-secondary;
-      margin-bottom: 24px;
-      line-height: 1.5;
-    }
-
     .action-btn {
-      --border-radius: 12px;
-      font-weight: 600;
+      @include button-large;
       width: 100%;
       max-width: 250px;
     }
   }
 
   .timeline-container {
-    padding: 20px 16px;
-    padding-bottom: 80px; // Espaço para o FAB
+    @include timeline-container;
 
     .timeline-item {
-      display: flex;
-      margin-bottom: 24px;
-      position: relative;
+      @include timeline-item;
 
       &.completed {
         .med-card {
           opacity: 0.8;
-          background: #f9f9f9;
+          background: var(--ion-color-light);
         }
         .time-column .time {
-          color: $text-secondary;
+          color: var(--text-secondary);
         }
       }
 
@@ -134,8 +100,8 @@ ion-content {
         .time {
           font-weight: 700;
           font-size: 14px;
-          color: $text-primary;
-          background: #e0e0e0;
+          color: var(--text-primary);
+          background: var(--ion-color-light);
           padding: 4px 8px;
           border-radius: 12px;
           margin-bottom: 8px;
@@ -144,7 +110,7 @@ ion-content {
         .line {
           flex: 1;
           width: 2px;
-          background: #e0e0e0;
+          background: var(--border-color);
           border-radius: 1px;
         }
       }
@@ -154,12 +120,9 @@ ion-content {
       }
 
       .med-card {
+        @include card-standard;
         margin: 0;
-        border-radius: 16px;
-        @include card-shadow;
         position: relative;
-        overflow: hidden;
-        background: $card-bg;
 
         .card-status-strip {
           position: absolute;
@@ -170,7 +133,7 @@ ion-content {
         }
 
         ion-card-content {
-          padding: 16px;
+          @include card-content-padding;
         }
 
         .med-header {
@@ -183,7 +146,7 @@ ion-content {
             h2 {
               font-size: 18px;
               font-weight: 700;
-              color: $text-primary;
+              color: var(--text-primary);
               margin: 0 0 4px 0;
             }
 
@@ -191,9 +154,9 @@ ion-content {
               display: flex;
               align-items: center;
               font-size: 14px;
-              color: $text-secondary;
+              color: var(--text-secondary);
               margin: 0;
-              
+
               ion-icon {
                 margin-right: 4px;
                 font-size: 16px;
@@ -202,12 +165,7 @@ ion-content {
           }
 
           .status-badge {
-            padding: 6px 10px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            @include badge-standard;
           }
         }
 
@@ -236,7 +194,7 @@ ion-content {
           justify-content: center;
           margin-top: 12px;
           padding-top: 12px;
-          border-top: 1px solid #eee;
+          border-top: 1px solid var(--border-color);
           color: var(--ion-color-success);
           font-weight: 600;
           font-size: 14px;
@@ -251,7 +209,7 @@ ion-content {
   }
 
   .add-fab {
-    --box-shadow: 0 4px 16px rgba(98, 0, 238, 0.3);
+    @include fab-standard;
   }
 
   // Estilos para o Farmacêutico (Dashboard)
@@ -259,66 +217,45 @@ ion-content {
     padding: 20px;
 
     .dashboard-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 16px;
+      @extend .dashboard-grid;
     }
 
     .dashboard-card {
+      @include card-standard;
       margin: 0;
-      border-radius: 16px;
-      @include card-shadow;
-      background: $card-bg;
       height: 100%;
       display: flex;
       flex-direction: column;
-      transition: transform 0.2s ease;
       cursor: pointer;
 
-      &:active {
-        transform: scale(0.98);
-      }
-
       ion-card-header {
-        padding: 16px;
-        padding-bottom: 8px;
-        display: flex;
-        flex-direction: column;
+        @include card-header;
         align-items: center;
         text-align: center;
 
         .icon-container {
-          width: 56px;
-          height: 56px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          @include icon-container;
           margin-bottom: 12px;
-          font-size: 28px;
 
           &.color-primary {
-            background: rgba($primary, 0.1);
-            color: $primary;
+            @include icon-primary;
           }
           &.color-secondary {
-            background: rgba($secondary, 0.1);
-            color: darken($secondary, 20%);
+            @include icon-secondary;
           }
           &.color-tertiary {
-            background: rgba(#ff9800, 0.1);
+            background: rgba(255, 152, 0, 0.1);
             color: #ff9800;
           }
           &.color-danger {
-            background: rgba(#f44336, 0.1);
-            color: #f44336;
+            @include icon-danger;
           }
         }
 
         ion-card-title {
           font-size: 16px;
           font-weight: 700;
-          color: $text-primary;
+          color: var(--text-primary);
         }
       }
 
@@ -326,7 +263,7 @@ ion-content {
         padding: 0 16px 16px 16px;
         text-align: center;
         font-size: 13px;
-        color: $text-secondary;
+        color: var(--text-secondary);
         flex: 1;
       }
     }

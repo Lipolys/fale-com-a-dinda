@@ -206,6 +206,30 @@ export class StorageService {
     await this.set('sync_queue', []);
   }
 
+  /**
+   * Remove itens de ministra inválidos da fila (com medicamento_uuid ao invés de medicamento_idmedicamento)
+   */
+  async cleanInvalidMinistraQueue(): Promise<void> {
+    let queue = await this.getSyncQueue();
+    const originalLength = queue.length;
+
+    queue = queue.filter(item => {
+      // Remove itens de ministra que usam medicamento_uuid ao invés de medicamento_idmedicamento
+      if (item.entity === 'ministra' && item.operation === 'create') {
+        if (item.data && 'medicamento_uuid' in item.data && !('medicamento_idmedicamento' in item.data)) {
+          console.log('🗑️ Removendo item inválido da fila:', item.id);
+          return false; // Remove
+        }
+      }
+      return true; // Mantém
+    });
+
+    if (queue.length < originalLength) {
+      await this.set('sync_queue', queue);
+      console.log(`✅ Removidos ${originalLength - queue.length} itens inválidos da fila`);
+    }
+  }
+
   // ==================== MÉTODOS PARA METADADOS ====================
 
   /**

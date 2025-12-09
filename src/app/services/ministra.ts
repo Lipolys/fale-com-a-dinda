@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { StorageService, STORAGE_KEYS } from './storage';
 import { AuthService } from './auth';
+import { MedicamentoService } from './medicamento';
 import {
   MinistraLocal,
   CriarMinistraLocalDTO,
@@ -29,8 +30,14 @@ export class MinistraService {
 
   constructor(
     private storage: StorageService,
-    private authService: AuthService
+    private authService: AuthService,
+    private medicamentoService: MedicamentoService
   ) {
+    // Limpa itens inválidos da fila de sincronização ao iniciar
+    this.storage.cleanInvalidMinistraQueue().catch(err =>
+      console.error('Erro ao limpar fila:', err)
+    );
+
     // Monitora mudanças de autenticação para recarregar dados
     this.authService.isAuthenticated$.subscribe(async (isAuthenticated) => {
       if (isAuthenticated) {
@@ -77,6 +84,17 @@ export class MinistraService {
       throw new Error('UUID do cliente é necessário para criar ministração');
     }
 
+    // Busca dados do medicamento para desnormalização
+    const medicamento = await this.medicamentoService.buscarPorUuid(dto.medicamento_uuid);
+
+    if (!medicamento) {
+      throw new Error('Medicamento não encontrado');
+    }
+
+    if (!medicamento.serverId) {
+      throw new Error('Aguarde a sincronização do medicamento antes de adicioná-lo à sua lista');
+    }
+
     // 1. Cria o modelo local
     const ministra: MinistraLocal = {
       ...createBaseModel(),
@@ -87,10 +105,10 @@ export class MinistraService {
       frequencia: dto.frequencia || null,
       status: dto.status !== undefined ? dto.status : 1, // Default 1 (ativo)
 
-      // TODO: Buscar o nome do medicamento para desnormalização
-      // Se você injetar o MedicamentoService, pode buscar pelo dto.medicamento_uuid
-      // e preencher 'medicamento_nome' aqui, para exibição offline.
-      // medicamento_nome: (await this.medicamentoService.buscarPorUuid(dto.medicamento_uuid))?.nome
+      // Dados desnormalizados do medicamento para exibição offline
+      medicamento_nome: medicamento.nome,
+      medicamento_descricao: medicamento.descricao,
+      medicamento_classe: medicamento.classe
     };
 
     // 2. Salva no storage local
@@ -101,19 +119,22 @@ export class MinistraService {
     );
 
     // 3. Adiciona à fila de sincronização
+    const syncData = {
+      medicamento_idmedicamento: medicamento.serverId, // ID do servidor do medicamento
+      horario: ministra.horario,
+      dosagem: ministra.dosagem,
+      frequencia: ministra.frequencia,
+      status: ministra.status
+    };
+
+    console.log('🔄 Adicionando à fila de sincronização:', syncData);
+
     await this.storage.addToSyncQueue({
       id: generateUUID(),
-      entity: 'ministra', // Nome da entidade para o SyncService
+      entity: 'ministra',
       uuid: ministra.uuid,
       operation: 'create',
-      data: { // Dados que o backend espera
-        // O SyncService deverá converter 'medicamento_uuid' para 'medicamento_idmedicamento'
-        medicamento_uuid: ministra.medicamento_uuid,
-        horario: ministra.horario,
-        dosagem: ministra.dosagem,
-        frequencia: ministra.frequencia,
-        status: ministra.status
-      },
+      data: syncData,
       timestamp: now(),
       retries: 0,
       maxRetries: 3
@@ -284,10 +305,89 @@ export class MinistraService {
     await this.carregarMinistra();
   }
 
-  /* * As funções de Sincronização (mesclarDoServidor, atualizarPosSincronizacao)
-   * são mais complexas para 'ministra' pois dependem de UUIDs relacionados
-   * (cliente_uuid, medicamento_uuid) que precisam ser resolvidos.
-   * Elas devem ser implementadas com cuidado no seu SyncService,
-   * usando o 'id_mapping' para converter serverId -> uuid local.
+  // ==================== SINCRONIZAÇÃO ====================
+
+  /**
+   * Mescla dados vindos do servidor com os dados locais
    */
+  public async mesclarDoServidor(apiData: any[]): Promise<void> {
+    if (!this.clienteUuid) {
+      console.warn('⚠️ Cliente UUID não disponível, pulando mesclagem de ministra');
+      return;
+    }
+
+    console.log(`📥 Mesclando ${apiData.length} ministrações do servidor`);
+
+    for (const apiItem of apiData) {
+      // Busca o medicamento pelo serverId para obter o UUID local
+      const medicamento = await this.medicamentoService.buscarPorServerId(apiItem.medicamento_idmedicamento);
+
+      if (!medicamento) {
+        console.warn(`⚠️ Medicamento ${apiItem.medicamento_idmedicamento} não encontrado localmente`);
+        continue;
+      }
+
+      // Busca se já existe localmente pelo serverId
+      const existente = await this.buscarPorServerId(apiItem.idministra);
+
+      if (existente) {
+        // Atualiza se o servidor tem versão mais nova
+        const serverTime = new Date(apiItem.updatedAt || apiItem.createdAt).getTime();
+        const localTime = new Date(existente.serverUpdatedAt || existente.updatedAt).getTime();
+
+        if (serverTime > localTime) {
+          const atualizado = {
+            ...existente,
+            horario: apiItem.horario,
+            dosagem: apiItem.dosagem,
+            frequencia: apiItem.frequencia,
+            status: apiItem.status,
+            medicamento_nome: apiItem.medicamento?.nome,
+            medicamento_descricao: apiItem.medicamento?.descricao,
+            medicamento_classe: apiItem.medicamento?.classe,
+            syncStatus: SyncStatus.SYNCED,
+            syncedAt: now(),
+            serverUpdatedAt: apiItem.updatedAt || apiItem.createdAt
+          };
+
+          await this.storage.setInCollection(STORAGE_KEYS.MINISTRA, existente.uuid, atualizado);
+          console.log(`🔄 Ministração ${existente.uuid} (serverId: ${apiItem.idministra}) atualizada do servidor`);
+        } else {
+          console.log(`⏭️ Ministração ${existente.uuid} (serverId: ${apiItem.idministra}) já está atualizada`);
+        }
+      } else {
+        // Cria novo registro local a partir do servidor
+        const novo: MinistraLocal = {
+          ...createBaseModel(),
+          serverId: apiItem.idministra,
+          cliente_uuid: this.clienteUuid,
+          medicamento_uuid: medicamento.uuid,
+          horario: apiItem.horario,
+          dosagem: apiItem.dosagem,
+          frequencia: apiItem.frequencia,
+          status: apiItem.status,
+          medicamento_nome: apiItem.medicamento?.nome,
+          medicamento_descricao: apiItem.medicamento?.descricao,
+          medicamento_classe: apiItem.medicamento?.classe,
+          syncStatus: SyncStatus.SYNCED,
+          syncedAt: now(),
+          serverUpdatedAt: apiItem.updatedAt || apiItem.createdAt
+        };
+
+        await this.storage.setInCollection(STORAGE_KEYS.MINISTRA, novo.uuid, novo);
+        console.log(`✅ Ministração ${novo.uuid} (serverId: ${apiItem.idministra}) criada do servidor`);
+      }
+    }
+
+    await this.carregarMinistra();
+    console.log(`✅ Mesclagem de ministrações concluída`);
+  }
+
+  /**
+   * Busca uma ministração pelo serverId
+   */
+  private async buscarPorServerId(serverId: number): Promise<MinistraLocal | null> {
+    const todas = await this.storage.getCollectionAsArray<MinistraLocal>(STORAGE_KEYS.MINISTRA);
+    return todas.find(m => m.serverId === serverId) || null;
+  }
 }

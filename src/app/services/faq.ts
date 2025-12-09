@@ -1,26 +1,35 @@
 import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject } from 'rxjs';
 import { StorageService, STORAGE_KEYS } from './storage';
+import { AuthService } from './auth';
+import { environment } from '../../environments/environment';
 import {
     FaqLocal,
     faqApiToLocal,
     createBaseModel,
-    generateUUID,
     now,
-    markAsUpdated,
-    markAsDeleted
+    SyncStatus
 } from '../models/local.models';
 
+/**
+ * Service para gerenciar FAQs
+ * FARMACÊUTICO: Online-only - envia direto para API
+ * CLIENTE: Apenas leitura
+ */
 @Injectable({
     providedIn: 'root'
 })
 export class FaqService {
 
+    private readonly API_URL = environment.apiUrl;
     private faqSubject = new BehaviorSubject<FaqLocal[]>([]);
     public faq$ = this.faqSubject.asObservable();
 
     constructor(
-        private storage: StorageService
+        private storage: StorageService,
+        private authService: AuthService,
+        private http: HttpClient
     ) {
         this.carregarFaqs();
     }
@@ -47,98 +56,158 @@ export class FaqService {
 
     /**
      * Cria uma nova FAQ
+     * FARMACÊUTICO: Envia direto para API (online-only)
      */
     public async criar(dto: { pergunta: string, resposta: string, farmaceutico_uuid?: string }): Promise<FaqLocal> {
-        const faq: FaqLocal = {
-            ...createBaseModel(),
-            pergunta: dto.pergunta,
-            resposta: dto.resposta,
-            farmaceutico_uuid: dto.farmaceutico_uuid || generateUUID() // Deveria ser o UUID do usuário logado
-        };
+        const user = await this.authService.getCurrentUser();
 
-        await this.storage.setInCollection(STORAGE_KEYS.FAQS, faq.uuid, faq);
+        if (user?.tipo_usuario === 'FARMACEUTICO') {
+            return await this.criarOnline(dto);
+        } else {
+            throw new Error('Apenas farmacêuticos podem criar FAQs');
+        }
+    }
 
-        await this.storage.addToSyncQueue({
-            id: generateUUID(),
-            entity: 'faq',
-            uuid: faq.uuid,
-            operation: 'create',
-            data: {
-                pergunta: faq.pergunta,
-                resposta: faq.resposta
-            },
-            timestamp: now(),
-            retries: 0,
-            maxRetries: 3
-        });
+    private async criarOnline(dto: { pergunta: string, resposta: string, farmaceutico_uuid?: string }): Promise<FaqLocal> {
+        try {
+            const token = await this.authService.getAccessToken();
+            if (!token) throw new Error('Não autenticado');
 
-        await this.carregarFaqs();
-        return faq;
+            const headers = new HttpHeaders({
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            });
+
+            const response = await this.http.post<any>(
+                `${this.API_URL}/faq`,
+                { pergunta: dto.pergunta, resposta: dto.resposta },
+                { headers }
+            ).toPromise();
+
+            const faq: FaqLocal = {
+                ...createBaseModel(),
+                serverId: response.idfaq,
+                pergunta: response.pergunta,
+                resposta: response.resposta,
+                farmaceutico_uuid: dto.farmaceutico_uuid || '',
+                syncStatus: SyncStatus.SYNCED,
+                syncedAt: now()
+            };
+
+            await this.storage.setInCollection(STORAGE_KEYS.FAQS, faq.uuid, faq);
+            await this.carregarFaqs();
+            console.log(`✅ FAQ criada online: ${faq.uuid}`);
+            return faq;
+
+        } catch (error: any) {
+            console.error('❌ Erro ao criar FAQ:', error);
+            if (error.status === 0) {
+                throw new Error('Sem conexão. Não foi possível criar a FAQ.');
+            }
+            throw new Error(error.error?.erro || 'Erro ao criar FAQ.');
+        }
     }
 
     /**
      * Edita uma FAQ existente
+     * FARMACÊUTICO: Envia direto para API (online-only)
      */
     public async editar(uuid: string, dto: { pergunta: string, resposta: string }): Promise<FaqLocal | null> {
+        const user = await this.authService.getCurrentUser();
         const faq = await this.buscarPorUuid(uuid);
         if (!faq) return null;
 
-        const atualizado: FaqLocal = {
-            ...faq,
-            ...markAsUpdated(faq),
-            pergunta: dto.pergunta,
-            resposta: dto.resposta
-        };
-
-        await this.storage.setInCollection(STORAGE_KEYS.FAQS, uuid, atualizado);
-
-        if (faq.serverId) {
-            await this.storage.addToSyncQueue({
-                id: generateUUID(),
-                entity: 'faq',
-                uuid: faq.uuid,
-                operation: 'update',
-                data: {
-                    pergunta: atualizado.pergunta,
-                    resposta: atualizado.resposta
-                },
-                timestamp: now(),
-                retries: 0,
-                maxRetries: 3
-            });
+        if (user?.tipo_usuario === 'FARMACEUTICO') {
+            return await this.editarOnline(faq, dto);
+        } else {
+            throw new Error('Apenas farmacêuticos podem editar FAQs');
         }
+    }
 
-        await this.carregarFaqs();
-        return atualizado;
+    private async editarOnline(faq: FaqLocal, dto: { pergunta: string, resposta: string }): Promise<FaqLocal | null> {
+        try {
+            if (!faq.serverId) throw new Error('FAQ não sincronizada');
+
+            const token = await this.authService.getAccessToken();
+            if (!token) throw new Error('Não autenticado');
+
+            const headers = new HttpHeaders({
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            });
+
+            await this.http.put(
+                `${this.API_URL}/faq/${faq.serverId}`,
+                dto,
+                { headers }
+            ).toPromise();
+
+            const atualizado: FaqLocal = {
+                ...faq,
+                pergunta: dto.pergunta,
+                resposta: dto.resposta,
+                updatedAt: now(),
+                syncedAt: now()
+            };
+
+            await this.storage.setInCollection(STORAGE_KEYS.FAQS, faq.uuid, atualizado);
+            await this.carregarFaqs();
+            console.log(`✅ FAQ editada online: ${faq.uuid}`);
+            return atualizado;
+
+        } catch (error: any) {
+            console.error('❌ Erro ao editar FAQ:', error);
+            if (error.status === 0) {
+                throw new Error('Sem conexão. Não foi possível editar a FAQ.');
+            }
+            throw new Error(error.error?.erro || 'Erro ao editar FAQ.');
+        }
     }
 
     /**
      * Deleta uma FAQ
+     * FARMACÊUTICO: Envia direto para API (online-only)
      */
     public async deletar(uuid: string): Promise<boolean> {
+        const user = await this.authService.getCurrentUser();
         const faq = await this.buscarPorUuid(uuid);
         if (!faq) return false;
 
-        const deletado = markAsDeleted(faq);
-        await this.storage.setInCollection(STORAGE_KEYS.FAQS, uuid, deletado);
-
-        if (faq.serverId) {
-            await this.storage.addToSyncQueue({
-                id: generateUUID(),
-                entity: 'faq',
-                uuid: faq.uuid,
-                operation: 'delete',
-                data: null,
-                timestamp: now(),
-                retries: 0,
-                maxRetries: 3
-            });
+        if (user?.tipo_usuario === 'FARMACEUTICO') {
+            return await this.deletarOnline(faq);
         } else {
-            await this.storage.removeFromCollection(STORAGE_KEYS.FAQS, uuid);
+            throw new Error('Apenas farmacêuticos podem deletar FAQs');
         }
+    }
 
-        await this.carregarFaqs();
-        return true;
+    private async deletarOnline(faq: FaqLocal): Promise<boolean> {
+        try {
+            if (!faq.serverId) throw new Error('FAQ não sincronizada');
+
+            const token = await this.authService.getAccessToken();
+            if (!token) throw new Error('Não autenticado');
+
+            const headers = new HttpHeaders({
+                'Authorization': `Bearer ${token}`
+            });
+
+            await this.http.delete(
+                `${this.API_URL}/faq/${faq.serverId}`,
+                { headers }
+            ).toPromise();
+
+            await this.storage.removeFromCollection(STORAGE_KEYS.FAQS, faq.uuid);
+            await this.carregarFaqs();
+            console.log(`✅ FAQ deletada online: ${faq.uuid}`);
+            return true;
+
+        } catch (error: any) {
+            console.error('❌ Erro ao deletar FAQ:', error);
+            if (error.status === 0) {
+                throw new Error('Sem conexão. Não foi possível deletar a FAQ.');
+            }
+            throw new Error(error.error?.erro || 'Erro ao deletar FAQ.');
+        }
     }
 
     /**

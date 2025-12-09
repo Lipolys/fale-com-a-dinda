@@ -1,0 +1,152 @@
+// Estilos específicos da Tab5 - Gerenciamento de Interações
+
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+  margin: 16px 0;
+  display: flex;
+  align-items: center;
+}
+
+.card-dinda {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.form-section {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.searchbar-dinda {
+  --background: var(--ion-color-light);
+  --border-radius: 12px;
+  padding: 0;
+}
+
+.list-item-dinda {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --inner-padding-end: 0;
+  margin: 4px 0;
+  --background: white;
+  border-radius: 12px;
+}
+
+.medicamento-selecionado {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #e8f5e9;
+  border-radius: 12px;
+  margin-top: 12px;
+
+  ion-icon {
+    font-size: 28px;
+  }
+
+  span {
+    font-size: 16px;
+    color: var(--text-primary);
+  }
+}
+
+.segment-dinda {
+  margin-top: 8px;
+
+  ion-segment-button {
+    --indicator-color: var(--ion-color-primary);
+    font-weight: 600;
+    font-size: 15px;
+  }
+}
+
+.textarea-dinda {
+  --background: var(--ion-color-light);
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+  border-radius: 12px;
+  margin-top: 8px;
+  font-size: 16px;
+}
+
+.badge-dinda {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 8px;
+}
+
+.icon-large {
+  font-size: 32px;
+  margin-right: 12px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+
+  ion-icon {
+    font-size: 80px;
+    color: #ccc;
+    margin-bottom: 20px;
+  }
+
+  h3 {
+    font-size: 22px;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 12px;
+  }
+
+  p {
+    font-size: 16px;
+    color: #999;
+    line-height: 1.6;
+  }
+}
+
+.list-spaced {
+  ion-item-sliding {
+    margin-bottom: 12px;
+  }
+}
+
+// Animação de fade in
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsividade
+@media (min-width: 768px) {
+  .card-dinda {
+    max-width: 800px;
+    margin: 20px auto;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
+

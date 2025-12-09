@@ -140,16 +140,22 @@ export class Tab1Page implements OnInit, OnDestroy {
 
   async verDetalhes(item: MedicamentoView) {
     const m = item.ministracao;
+
+    // Monta a mensagem com quebras de linha
+    const detalhes = [
+      `📋 Dosagem: ${m.dosagem || 'Não informada'}`,
+      `🕐 Horário: ${m.horario || 'Não informado'}`,
+      `🔄 Frequência: ${m.frequencia ? m.frequencia + 'x por dia' : 'Não informada'}`
+    ];
+
+    if (m.medicamento_classe) {
+      detalhes.push(`💊 Classe: ${m.medicamento_classe}`);
+    }
+
     const alert = await this.alertController.create({
-      header: m.medicamento_nome,
+      header: m.medicamento_nome || 'Detalhes do Medicamento',
       cssClass: 'modal-dinda',
-      message: `
-        <div style="text-align: left; font-size: 18px; line-height: 1.8;">
-          <p><strong>📋 Dosagem:</strong><br>${m.dosagem || 'Não informada'}</p>
-          <p><strong>🕐 Horário:</strong><br>${m.horario || 'Não informado'}</p>
-          <p><strong>🔄 Frequência:</strong><br>${m.frequencia ? m.frequencia + 'h' : 'Não informada'}</p>
-        </div>
-      `,
+      message: detalhes.join('\n\n'),
       buttons: [
         {
           text: 'Fechar',
@@ -185,16 +191,16 @@ export class Tab1Page implements OnInit, OnDestroy {
   }
 
   adicionarMedicamento() {
-    this.navCtrl.navigateForward('/tabs/tab2');
+    this.navCtrl.navigateForward('/app/tab2');
   }
 
   // Ações do Farmacêutico
   gerenciarMedicamentos() {
-    this.navCtrl.navigateForward('tabs/tab2');
+    this.navCtrl.navigateForward('app/tab2');
   }
 
   gerenciarFaqs() {
-    this.navCtrl.navigateForward('tabs/tab3');
+    this.navCtrl.navigateForward('app/tab3');
   }
 
   gerenciarDicas() {

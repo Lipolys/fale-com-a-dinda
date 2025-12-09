@@ -1,29 +1,40 @@
 import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject } from 'rxjs';
 import { StorageService, STORAGE_KEYS } from './storage';
+import { AuthService } from './auth';
+import { environment } from '../../environments/environment';
 import {
     InteracaoLocal,
     interacaoApiToLocal,
-    MedicamentoLocal,
     createBaseModel,
     generateUUID,
     now,
     markAsUpdated,
-    markAsDeleted
+    markAsDeleted,
+    SyncStatus
 } from '../models/local.models';
 import { MedicamentoService } from './medicamento';
 
+/**
+ * Service para gerenciar Interações
+ * FARMACÊUTICO: Online-only - envia direto para API
+ * CLIENTE: Apenas leitura
+ */
 @Injectable({
     providedIn: 'root'
 })
 export class InteracaoService {
 
+    private readonly API_URL = environment.apiUrl;
     private interacaoSubject = new BehaviorSubject<InteracaoLocal[]>([]);
     public interacao$ = this.interacaoSubject.asObservable();
 
     constructor(
         private storage: StorageService,
-        private medicamentoService: MedicamentoService
+        private medicamentoService: MedicamentoService,
+        private authService: AuthService,
+        private http: HttpClient
     ) {
         this.carregarInteracoes();
     }
@@ -58,6 +69,13 @@ export class InteracaoService {
         const todasInteracoes = await this.listar();
         const interacoesEncontradas: InteracaoLocal[] = [];
 
+        // Buscar todos os medicamentos para resolver nomes
+        const medicamentos = await this.medicamentoService.listar();
+        const mapUuidToNome = new Map<string, string>();
+        medicamentos.forEach(m => {
+            mapUuidToNome.set(m.uuid, m.nome);
+        });
+
         for (const medUuid of listaMedsUuids) {
             // Verifica se existe interação entre novoMedUuid e medUuid
             // A interação pode estar cadastrada como (med1, med2) ou (med2, med1)
@@ -67,7 +85,13 @@ export class InteracaoService {
             );
 
             if (interacao) {
-                interacoesEncontradas.push(interacao);
+                // Resolver nomes dos medicamentos
+                const interacaoComNomes = {
+                    ...interacao,
+                    medicamento1_nome: mapUuidToNome.get(interacao.medicamento1_uuid) || 'Medicamento desconhecido',
+                    medicamento2_nome: mapUuidToNome.get(interacao.medicamento2_uuid) || 'Medicamento desconhecido'
+                };
+                interacoesEncontradas.push(interacaoComNomes);
             }
         }
 
@@ -75,11 +99,15 @@ export class InteracaoService {
     }
 
     public async mesclarDoServidor(apiResponse: any[]): Promise<void> {
-        // Preciso dos medicamentos para resolver IDs -> UUIDs
+        // Preciso dos medicamentos para resolver IDs -> UUIDs e nomes
         const medicamentos = await this.medicamentoService.listar();
         const mapIdToUuid = new Map<number, string>();
+        const mapIdToNome = new Map<number, string>();
         medicamentos.forEach(m => {
-            if (m.serverId) mapIdToUuid.set(m.serverId, m.uuid);
+            if (m.serverId) {
+                mapIdToUuid.set(m.serverId, m.uuid);
+                mapIdToNome.set(m.serverId, m.nome);
+            }
         });
 
         const atuais = await this.listar();
@@ -99,10 +127,16 @@ export class InteracaoService {
 
             const med1Uuid = mapIdToUuid.get(id1);
             const med2Uuid = mapIdToUuid.get(id2);
+            const med1Nome = mapIdToNome.get(id1);
+            const med2Nome = mapIdToNome.get(id2);
 
             if (med1Uuid && med2Uuid) {
                 const existing = mapAtuais.get(key);
                 const updated = interacaoApiToLocal(apiInteracao, med1Uuid, med2Uuid, existing);
+
+                // Garantir que os nomes estão preenchidos
+                updated.medicamento1_nome = updated.medicamento1_nome || med1Nome || 'Medicamento desconhecido';
+                updated.medicamento2_nome = updated.medicamento2_nome || med2Nome || 'Medicamento desconhecido';
 
                 await this.storage.setInCollection(
                     STORAGE_KEYS.INTERACOES,
@@ -125,7 +159,11 @@ export class InteracaoService {
         descricao: string,
         gravidade: 'BAIXA' | 'MEDIA' | 'ALTA'
     }): Promise<InteracaoLocal> {
-        // Busca nomes para facilitar display
+        const user = await this.authService.getCurrentUser();
+        if (user?.tipo_usuario !== 'FARMACEUTICO') {
+            throw new Error('Apenas farmacêuticos podem criar interações');
+        }
+
         const med1 = await this.medicamentoService.buscarPorUuid(dados.medicamento1_uuid);
         const med2 = await this.medicamentoService.buscarPorUuid(dados.medicamento2_uuid);
 
@@ -133,38 +171,63 @@ export class InteracaoService {
             throw new Error('Medicamentos não encontrados para criar interação');
         }
 
-        const interacao: InteracaoLocal = {
-            ...createBaseModel(),
-            medicamento1_uuid: dados.medicamento1_uuid,
-            medicamento2_uuid: dados.medicamento2_uuid,
-            medicamento1_nome: med1.nome,
-            medicamento2_nome: med2.nome,
-            descricao: dados.descricao,
-            gravidade: dados.gravidade,
-            farmaceutico_uuid: generateUUID(), // TODO: Usar usuário logado
-            fonte: null
-        };
+        if (!med1.serverId || !med2.serverId) {
+            throw new Error('Medicamentos não foram sincronizados ainda');
+        }
 
-        await this.storage.setInCollection(STORAGE_KEYS.INTERACOES, interacao.uuid, interacao);
+        try {
+            const token = await this.authService.getAccessToken();
+            if (!token) throw new Error('Não autenticado');
 
-        await this.storage.addToSyncQueue({
-            id: generateUUID(),
-            entity: 'interacao',
-            uuid: interacao.uuid,
-            operation: 'create',
-            data: {
-                medicamento1_uuid: interacao.medicamento1_uuid,
-                medicamento2_uuid: interacao.medicamento2_uuid,
-                descricao: interacao.descricao,
-                gravidade: interacao.gravidade
-            },
-            timestamp: now(),
-            retries: 0,
-            maxRetries: 3
-        });
+            const headers = new HttpHeaders({
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            });
 
-        await this.carregarInteracoes();
-        return interacao;
+            const payload = {
+                idmedicamento1: med1.serverId,
+                idmedicamento2: med2.serverId,
+                descricao: dados.descricao,
+                gravidade: dados.gravidade
+            };
+
+            const response = await this.http.post<any>(
+                `${this.API_URL}/interacao`,
+                payload,
+                { headers }
+            ).toPromise();
+
+            const interacao: InteracaoLocal = {
+                ...createBaseModel(),
+                serverId: response.idinteracao,
+                medicamento1_uuid: dados.medicamento1_uuid,
+                medicamento2_uuid: dados.medicamento2_uuid,
+                medicamento1_nome: med1.nome,
+                medicamento2_nome: med2.nome,
+                descricao: dados.descricao,
+                gravidade: dados.gravidade,
+                farmaceutico_uuid: user.idusuario?.toString() || '',
+                fonte: null,
+                syncStatus: SyncStatus.SYNCED,
+                syncedAt: now(),
+                serverIds: {
+                    idmedicamento1: med1.serverId,
+                    idmedicamento2: med2.serverId
+                }
+            };
+
+            await this.storage.setInCollection(STORAGE_KEYS.INTERACOES, interacao.uuid, interacao);
+            await this.carregarInteracoes();
+            console.log(`✅ Interação criada online: ${interacao.uuid}`);
+            return interacao;
+
+        } catch (error: any) {
+            console.error('❌ Erro ao criar interação:', error);
+            if (error.status === 0) {
+                throw new Error('Sem conexão. Não foi possível criar a interação.');
+            }
+            throw new Error(error.error?.erro || 'Erro ao criar interação.');
+        }
     }
 
     public async editar(uuid: string, dados: {

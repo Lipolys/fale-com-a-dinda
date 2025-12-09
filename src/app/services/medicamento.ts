@@ -1,31 +1,30 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { BehaviorSubject } from 'rxjs';
 import { StorageService, STORAGE_KEYS } from './storage';
 import { AuthService } from './auth';
+import { environment } from '../../environments/environment';
 import {
   MedicamentoLocal,
   CriarMedicamentoLocalDTO,
   createBaseModel,
   generateUUID,
   now,
-  markAsUpdated,
-  markAsDeleted,
   SyncStatus
 } from '../models/local.models';
 
 /**
- * Service para gerenciar medicamentos com suporte offline-first
+ * Service para gerenciar medicamentos
  *
- * FUNCIONAMENTO:
- * 1. Todas as operações são feitas localmente primeiro (Ionic Storage)
- * 2. Operações são adicionadas à fila de sincronização
- * 3. SyncService sincroniza automaticamente quando online
- * 4. Dados sempre disponíveis offline
+ * FARMACÊUTICO: Online-only - envia direto para API
+ * CLIENTE: Offline-first - salva local e sincroniza depois
  */
 @Injectable({
   providedIn: 'root'
 })
 export class MedicamentoService {
+
+  private readonly API_URL = environment.apiUrl;
 
   // Observable para componentes reagirem a mudanças
   private medicamentosSubject = new BehaviorSubject<MedicamentoLocal[]>([]);
@@ -33,7 +32,8 @@ export class MedicamentoService {
 
   constructor(
     private storage: StorageService,
-    private authService: AuthService
+    private authService: AuthService,
+    private http: HttpClient
   ) {
     // Monitora mudanças de autenticação para recarregar dados
     this.authService.isAuthenticated$.subscribe(async (isAuthenticated) => {
@@ -63,46 +63,88 @@ export class MedicamentoService {
   }
 
   /**
-   * Cria um novo medicamento (offline-first)
+   * Cria um novo medicamento
+   * FARMACÊUTICO: Envia direto para API (online-only)
+   * CLIENTE: Nunca cria medicamentos
    */
   public async criar(dto: CriarMedicamentoLocalDTO): Promise<MedicamentoLocal> {
-    // 1. Cria medicamento local com UUID
-    const medicamento: MedicamentoLocal = {
-      ...createBaseModel(),
-      nome: dto.nome,
-      descricao: dto.descricao,
-      classe: dto.classe,
-      farmaceutico_uuid: dto.farmaceutico_uuid || null
-    };
+    const user = await this.authService.getCurrentUser();
 
-    // 2. Salva no storage local
-    await this.storage.setInCollection(
-      STORAGE_KEYS.MEDICAMENTOS,
-      medicamento.uuid,
-      medicamento
-    );
+    if (user?.tipo_usuario === 'FARMACEUTICO') {
+      // FARMACÊUTICO: Online-only
+      return await this.criarOnline(dto);
+    } else {
+      throw new Error('Apenas farmacêuticos podem criar medicamentos');
+    }
+  }
 
-    // 3. Adiciona à fila de sincronização
-    await this.storage.addToSyncQueue({
-      id: generateUUID(),
-      entity: 'medicamento',
-      uuid: medicamento.uuid,
-      operation: 'create',
-      data: {
-        nome: medicamento.nome,
-        descricao: medicamento.descricao,
-        classe: medicamento.classe
-      },
-      timestamp: now(),
-      retries: 0,
-      maxRetries: 3
-    });
+  /**
+   * Cria medicamento diretamente na API (para farmacêuticos)
+   */
+  private async criarOnline(dto: CriarMedicamentoLocalDTO): Promise<MedicamentoLocal> {
+    try {
+      const token = await this.authService.getAccessToken();
+      if (!token) {
+        throw new Error('Não autenticado');
+      }
 
-    // 4. Atualiza Observable
-    await this.carregarMedicamentos();
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      });
 
-    console.log(`✅ Medicamento criado localmente: ${medicamento.uuid}`);
-    return medicamento;
+      const payload = {
+        nome: dto.nome,
+        descricao: dto.descricao,
+        classe: dto.classe
+      };
+
+      console.log('📤 Criando medicamento online:', payload);
+
+      const response = await this.http.post<any>(
+        `${this.API_URL}/medicamento`,
+        payload,
+        { headers }
+      ).toPromise();
+
+      // Cria modelo local a partir da resposta
+      const medicamento: MedicamentoLocal = {
+        ...createBaseModel(),
+        serverId: response.idmedicamento,
+        nome: response.nome,
+        descricao: response.descricao,
+        classe: response.classe,
+        farmaceutico_uuid: dto.farmaceutico_uuid || null,
+        syncStatus: SyncStatus.SYNCED,
+        syncedAt: now(),
+        serverUpdatedAt: response.updatedAt || response.createdAt
+      };
+
+      // Salva localmente apenas para cache
+      await this.storage.setInCollection(
+        STORAGE_KEYS.MEDICAMENTOS,
+        medicamento.uuid,
+        medicamento
+      );
+
+      await this.carregarMedicamentos();
+      console.log(`✅ Medicamento criado online: ${medicamento.uuid} (serverId: ${response.idmedicamento})`);
+
+      return medicamento;
+
+    } catch (error: any) {
+      console.error('❌ Erro ao criar medicamento:', error);
+
+      if (error.status === 0 || error.message === 'Http failure response for (unknown url): 0 Unknown Error') {
+        throw new Error('Sem conexão com a internet. Não foi possível criar o medicamento.');
+      } else if (error.status === 401) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      } else if (error.error?.erro) {
+        throw new Error(error.error.erro);
+      } else {
+        throw new Error('Erro ao criar medicamento. Tente novamente.');
+      }
+    }
   }
 
   /**
@@ -132,12 +174,13 @@ export class MedicamentoService {
 
   /**
    * Edita um medicamento existente
+   * FARMACÊUTICO: Envia direto para API (online-only)
    */
   public async editar(
     uuid: string,
     dados: Partial<CriarMedicamentoLocalDTO>
   ): Promise<MedicamentoLocal | null> {
-    // 1. Busca medicamento local
+    const user = await this.authService.getCurrentUser();
     const medicamento = await this.buscarPorUuid(uuid);
 
     if (!medicamento) {
@@ -145,51 +188,91 @@ export class MedicamentoService {
       return null;
     }
 
-    // 2. Atualiza dados
-    const atualizado: MedicamentoLocal = {
-      ...medicamento,
-      ...dados,
-      ...markAsUpdated(medicamento)
-    };
-
-    // 3. Salva no storage
-    await this.storage.setInCollection(
-      STORAGE_KEYS.MEDICAMENTOS,
-      uuid,
-      atualizado
-    );
-
-    // 4. Adiciona à fila de sincronização
-    // Só adiciona se já foi sincronizado antes (tem serverId)
-    if (medicamento.serverId) {
-      await this.storage.addToSyncQueue({
-        id: generateUUID(),
-        entity: 'medicamento',
-        uuid: medicamento.uuid,
-        operation: 'update',
-        data: {
-          nome: atualizado.nome,
-          descricao: atualizado.descricao,
-          classe: atualizado.classe
-        },
-        timestamp: now(),
-        retries: 0,
-        maxRetries: 3
-      });
+    if (user?.tipo_usuario === 'FARMACEUTICO') {
+      // FARMACÊUTICO: Online-only
+      return await this.editarOnline(medicamento, dados);
+    } else {
+      throw new Error('Apenas farmacêuticos podem editar medicamentos');
     }
-
-    // 5. Atualiza Observable
-    await this.carregarMedicamentos();
-
-    console.log(`✅ Medicamento ${uuid} atualizado localmente`);
-    return atualizado;
   }
 
   /**
-   * Deleta um medicamento (soft delete local)
+   * Edita medicamento diretamente na API (para farmacêuticos)
+   */
+  private async editarOnline(
+    medicamento: MedicamentoLocal,
+    dados: Partial<CriarMedicamentoLocalDTO>
+  ): Promise<MedicamentoLocal | null> {
+    try {
+      if (!medicamento.serverId) {
+        throw new Error('Medicamento não foi sincronizado ainda');
+      }
+
+      const token = await this.authService.getAccessToken();
+      if (!token) {
+        throw new Error('Não autenticado');
+      }
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      });
+
+      const payload = {
+        nome: dados.nome || medicamento.nome,
+        descricao: dados.descricao || medicamento.descricao,
+        classe: dados.classe || medicamento.classe
+      };
+
+      console.log(`📤 Editando medicamento online (ID: ${medicamento.serverId}):`, payload);
+
+      await this.http.put(
+        `${this.API_URL}/medicamento/${medicamento.serverId}`,
+        payload,
+        { headers }
+      ).toPromise();
+
+      // Atualiza localmente após sucesso
+      const atualizado: MedicamentoLocal = {
+        ...medicamento,
+        ...dados,
+        updatedAt: now(),
+        serverUpdatedAt: now(),
+        syncedAt: now()
+      };
+
+      await this.storage.setInCollection(
+        STORAGE_KEYS.MEDICAMENTOS,
+        medicamento.uuid,
+        atualizado
+      );
+
+      await this.carregarMedicamentos();
+      console.log(`✅ Medicamento editado online: ${medicamento.uuid}`);
+
+      return atualizado;
+
+    } catch (error: any) {
+      console.error('❌ Erro ao editar medicamento:', error);
+
+      if (error.status === 0 || error.message === 'Http failure response for (unknown url): 0 Unknown Error') {
+        throw new Error('Sem conexão com a internet. Não foi possível editar o medicamento.');
+      } else if (error.status === 401) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      } else if (error.error?.erro) {
+        throw new Error(error.error.erro);
+      } else {
+        throw new Error('Erro ao editar medicamento. Tente novamente.');
+      }
+    }
+  }
+
+  /**
+   * Deleta um medicamento
+   * FARMACÊUTICO: Envia direto para API (online-only)
    */
   public async deletar(uuid: string): Promise<boolean> {
-    // 1. Busca medicamento
+    const user = await this.authService.getCurrentUser();
     const medicamento = await this.buscarPorUuid(uuid);
 
     if (!medicamento) {
@@ -197,38 +280,63 @@ export class MedicamentoService {
       return false;
     }
 
-    // 2. Marca como deletado localmente
-    const deletado = markAsDeleted(medicamento);
-
-    // 3. Salva no storage (mantém para sincronizar)
-    await this.storage.setInCollection(
-      STORAGE_KEYS.MEDICAMENTOS,
-      uuid,
-      deletado
-    );
-
-    // 4. Adiciona à fila de sincronização (se já foi sincronizado)
-    if (medicamento.serverId) {
-      await this.storage.addToSyncQueue({
-        id: generateUUID(),
-        entity: 'medicamento',
-        uuid: medicamento.uuid,
-        operation: 'delete',
-        data: null,
-        timestamp: now(),
-        retries: 0,
-        maxRetries: 3
-      });
+    if (user?.tipo_usuario === 'FARMACEUTICO') {
+      // FARMACÊUTICO: Online-only
+      return await this.deletarOnline(medicamento);
     } else {
-      // Nunca foi sincronizado, pode remover direto
-      await this.storage.removeFromCollection(STORAGE_KEYS.MEDICAMENTOS, uuid);
+      throw new Error('Apenas farmacêuticos podem deletar medicamentos');
     }
+  }
 
-    // 5. Atualiza Observable (remove da lista visível)
-    await this.carregarMedicamentos();
+  /**
+   * Deleta medicamento diretamente na API (para farmacêuticos)
+   */
+  private async deletarOnline(medicamento: MedicamentoLocal): Promise<boolean> {
+    try {
+      if (!medicamento.serverId) {
+        throw new Error('Medicamento não foi sincronizado ainda');
+      }
 
-    console.log(`✅ Medicamento ${uuid} marcado para deleção`);
-    return true;
+      const token = await this.authService.getAccessToken();
+      if (!token) {
+        throw new Error('Não autenticado');
+      }
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`
+      });
+
+      console.log(`📤 Deletando medicamento online (ID: ${medicamento.serverId})`);
+
+      await this.http.delete(
+        `${this.API_URL}/medicamento/${medicamento.serverId}`,
+        { headers }
+      ).toPromise();
+
+      // Remove do storage local após sucesso
+      await this.storage.removeFromCollection(
+        STORAGE_KEYS.MEDICAMENTOS,
+        medicamento.uuid
+      );
+
+      await this.carregarMedicamentos();
+      console.log(`✅ Medicamento deletado online: ${medicamento.uuid}`);
+
+      return true;
+
+    } catch (error: any) {
+      console.error('❌ Erro ao deletar medicamento:', error);
+
+      if (error.status === 0 || error.message === 'Http failure response for (unknown url): 0 Unknown Error') {
+        throw new Error('Sem conexão com a internet. Não foi possível deletar o medicamento.');
+      } else if (error.status === 401) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      } else if (error.error?.erro) {
+        throw new Error(error.error.erro);
+      } else {
+        throw new Error('Erro ao deletar medicamento. Tente novamente.');
+      }
+    }
   }
 
   // ==================== FILTROS E BUSCAS ====================
@@ -343,7 +451,6 @@ export class MedicamentoService {
       return;
     }
 
-
     const locais = await this.storage.getCollection<MedicamentoLocal>(
       STORAGE_KEYS.MEDICAMENTOS
     );
@@ -359,23 +466,21 @@ export class MedicamentoService {
         const serverTime = new Date(apiMed.updatedAt || apiMed.createdAt).getTime();
         const localTime = new Date(existente.updatedAt).getTime();
 
-        if (serverTime > localTime && existente.syncStatus === SyncStatus.SYNCED) {
+        if (serverTime > localTime) {
           const atualizado: MedicamentoLocal = {
             ...existente,
             nome: apiMed.nome,
             descricao: apiMed.descricao,
             classe: apiMed.classe,
             serverUpdatedAt: apiMed.updatedAt || apiMed.createdAt,
-            syncedAt: now()
+            syncedAt: now(),
+            syncStatus: SyncStatus.SYNCED
           };
 
           locais[existente.uuid] = atualizado;
-          // Atualiza
-          await this.storage.setInCollection(
-            STORAGE_KEYS.MEDICAMENTOS,
-            existente.uuid,
-            atualizado
-          );
+          console.log(`🔄 Medicamento ${existente.uuid} atualizado do servidor`);
+        } else {
+          console.log(`⏭️ Medicamento ${existente.uuid} já está atualizado`);
         }
       } else {
         // Não existe localmente - adiciona
@@ -393,6 +498,7 @@ export class MedicamentoService {
         };
 
         locais[novoLocal.uuid] = novoLocal;
+        console.log(`✅ Medicamento ${novoLocal.uuid} criado do servidor`);
       }
     }
 

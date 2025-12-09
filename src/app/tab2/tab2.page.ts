@@ -175,7 +175,7 @@ export class Tab2Page implements OnInit, OnDestroy {
       const alert = await this.alertCtrl.create({
         header: '⚠️ Interação Medicamentosa',
         message: this.formatarMensagemInteracao(interacoes),
-        cssClass: 'modal-dinda', // Reusing modal style for better look or custom alert class
+        cssClass: 'alert-interacao',
         buttons: [
           {
             text: 'Cancelar',
@@ -198,16 +198,17 @@ export class Tab2Page implements OnInit, OnDestroy {
   }
 
   private formatarMensagemInteracao(interacoes: any[]): string {
-    let msg = '<div style="text-align: left; max-height: 300px; overflow-y: auto;">';
-    msg += '<p>Este medicamento interage com outros que você já toma:</p>';
-    interacoes.forEach(i => {
-      msg += `<div style="margin-bottom: 12px; padding: 8px; background: #fff0f0; border-radius: 8px;">`;
-      msg += `<strong>${i.medicamento1_nome} + ${i.medicamento2_nome}</strong><br>`;
-      msg += `<span style="color: #d32f2f; font-weight: bold;">Gravidade: ${i.gravidade}</span><br>`;
-      msg += `<span style="font-size: 14px;">${i.descricao}</span>`;
-      msg += `</div>`;
+    let msg = 'Este medicamento interage com outros que você já toma:\n\n';
+    interacoes.forEach((i, index) => {
+      msg += `💊 ${i.medicamento1_nome}\n`;
+      msg += `   +\n`;
+      msg += `💊 ${i.medicamento2_nome}\n\n`;
+      msg += `⚠️ Gravidade: ${i.gravidade}\n`;
+      msg += `📝 ${i.descricao}\n`;
+      if (index < interacoes.length - 1) {
+        msg += '\n';
+      }
     });
-    msg += '</div>';
     return msg;
   }
 

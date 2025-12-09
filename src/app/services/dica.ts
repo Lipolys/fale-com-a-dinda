@@ -1,30 +1,36 @@
 import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject } from 'rxjs';
 import { StorageService, STORAGE_KEYS } from './storage';
 import { AuthService } from './auth';
+import { environment } from '../../environments/environment';
 import {
     DicaLocal,
     CriarDicaLocalDTO,
     createBaseModel,
-    generateUUID,
     now,
-    markAsUpdated,
-    markAsDeleted,
     SyncStatus,
     dicaApiToLocal
 } from '../models/local.models';
 
+/**
+ * Service para gerenciar Dicas
+ * FARMACÊUTICO: Online-only - envia direto para API
+ * CLIENTE: Apenas leitura
+ */
 @Injectable({
     providedIn: 'root'
 })
 export class DicaService {
 
+    private readonly API_URL = environment.apiUrl;
     private dicasSubject = new BehaviorSubject<DicaLocal[]>([]);
     public dicas$ = this.dicasSubject.asObservable();
 
     constructor(
         private storage: StorageService,
-        private authService: AuthService
+        private authService: AuthService,
+        private http: HttpClient
     ) {
         this.authService.isAuthenticated$.subscribe(async (isAuthenticated) => {
             if (isAuthenticated) {
@@ -44,27 +50,47 @@ export class DicaService {
     }
 
     public async criar(dto: CriarDicaLocalDTO): Promise<DicaLocal> {
-        const dica: DicaLocal = {
-            ...createBaseModel(),
-            texto: dto.texto,
-            farmaceutico_uuid: dto.farmaceutico_uuid || generateUUID()
-        };
+        const user = await this.authService.getCurrentUser();
+        if (user?.tipo_usuario !== 'FARMACEUTICO') {
+            throw new Error('Apenas farmacêuticos podem criar dicas');
+        }
 
-        await this.storage.setInCollection(STORAGE_KEYS.DICAS, dica.uuid, dica);
+        try {
+            const token = await this.authService.getAccessToken();
+            if (!token) throw new Error('Não autenticado');
 
-        await this.storage.addToSyncQueue({
-            id: generateUUID(),
-            entity: 'dica',
-            uuid: dica.uuid,
-            operation: 'create',
-            data: { texto: dica.texto },
-            timestamp: now(),
-            retries: 0,
-            maxRetries: 3
-        });
+            const headers = new HttpHeaders({
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            });
 
-        await this.carregarDicas();
-        return dica;
+            const response = await this.http.post<any>(
+                `${this.API_URL}/dica`,
+                { texto: dto.texto },
+                { headers }
+            ).toPromise();
+
+            const dica: DicaLocal = {
+                ...createBaseModel(),
+                serverId: response.iddica,
+                texto: response.texto,
+                farmaceutico_uuid: dto.farmaceutico_uuid || '',
+                syncStatus: SyncStatus.SYNCED,
+                syncedAt: now()
+            };
+
+            await this.storage.setInCollection(STORAGE_KEYS.DICAS, dica.uuid, dica);
+            await this.carregarDicas();
+            console.log(`✅ Dica criada online: ${dica.uuid}`);
+            return dica;
+
+        } catch (error: any) {
+            console.error('❌ Erro ao criar dica:', error);
+            if (error.status === 0) {
+                throw new Error('Sem conexão. Não foi possível criar a dica.');
+            }
+            throw new Error(error.error?.erro || 'Erro ao criar dica.');
+        }
     }
 
     public async listar(): Promise<DicaLocal[]> {
@@ -76,58 +102,88 @@ export class DicaService {
     }
 
     public async editar(uuid: string, texto: string): Promise<DicaLocal | null> {
+        const user = await this.authService.getCurrentUser();
         const dica = await this.buscarPorUuid(uuid);
         if (!dica) return null;
 
-        const atualizada: DicaLocal = {
-            ...dica,
-            ...markAsUpdated(dica),
-            texto
-        };
-
-        await this.storage.setInCollection(STORAGE_KEYS.DICAS, uuid, atualizada);
-
-        if (dica.serverId) {
-            await this.storage.addToSyncQueue({
-                id: generateUUID(),
-                entity: 'dica',
-                uuid: dica.uuid,
-                operation: 'update',
-                data: { texto: atualizada.texto },
-                timestamp: now(),
-                retries: 0,
-                maxRetries: 3
-            });
+        if (user?.tipo_usuario !== 'FARMACEUTICO') {
+            throw new Error('Apenas farmacêuticos podem editar dicas');
         }
 
-        await this.carregarDicas();
-        return atualizada;
+        try {
+            if (!dica.serverId) throw new Error('Dica não sincronizada');
+
+            const token = await this.authService.getAccessToken();
+            if (!token) throw new Error('Não autenticado');
+
+            const headers = new HttpHeaders({
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            });
+
+            await this.http.put(
+                `${this.API_URL}/dica/${dica.serverId}`,
+                { texto },
+                { headers }
+            ).toPromise();
+
+            const atualizada: DicaLocal = {
+                ...dica,
+                texto,
+                updatedAt: now(),
+                syncedAt: now()
+            };
+
+            await this.storage.setInCollection(STORAGE_KEYS.DICAS, uuid, atualizada);
+            await this.carregarDicas();
+            console.log(`✅ Dica editada online: ${uuid}`);
+            return atualizada;
+
+        } catch (error: any) {
+            console.error('❌ Erro ao editar dica:', error);
+            if (error.status === 0) {
+                throw new Error('Sem conexão. Não foi possível editar a dica.');
+            }
+            throw new Error(error.error?.erro || 'Erro ao editar dica.');
+        }
     }
 
     public async deletar(uuid: string): Promise<boolean> {
+        const user = await this.authService.getCurrentUser();
         const dica = await this.buscarPorUuid(uuid);
         if (!dica) return false;
 
-        const deletada = markAsDeleted(dica);
-        await this.storage.setInCollection(STORAGE_KEYS.DICAS, uuid, deletada);
-
-        if (dica.serverId) {
-            await this.storage.addToSyncQueue({
-                id: generateUUID(),
-                entity: 'dica',
-                uuid: dica.uuid,
-                operation: 'delete',
-                data: null,
-                timestamp: now(),
-                retries: 0,
-                maxRetries: 3
-            });
-        } else {
-            await this.storage.removeFromCollection(STORAGE_KEYS.DICAS, uuid);
+        if (user?.tipo_usuario !== 'FARMACEUTICO') {
+            throw new Error('Apenas farmacêuticos podem deletar dicas');
         }
 
-        await this.carregarDicas();
-        return true;
+        try {
+            if (!dica.serverId) throw new Error('Dica não sincronizada');
+
+            const token = await this.authService.getAccessToken();
+            if (!token) throw new Error('Não autenticado');
+
+            const headers = new HttpHeaders({
+                'Authorization': `Bearer ${token}`
+            });
+
+            await this.http.delete(
+                `${this.API_URL}/dica/${dica.serverId}`,
+                { headers }
+            ).toPromise();
+
+            await this.storage.removeFromCollection(STORAGE_KEYS.DICAS, uuid);
+            await this.carregarDicas();
+            console.log(`✅ Dica deletada online: ${uuid}`);
+            return true;
+
+        } catch (error: any) {
+            console.error('❌ Erro ao deletar dica:', error);
+            if (error.status === 0) {
+                throw new Error('Sem conexão. Não foi possível deletar a dica.');
+            }
+            throw new Error(error.error?.erro || 'Erro ao deletar dica.');
+        }
     }
 
     public async mesclarDoServidor(apiResponse: any[]): Promise<void> {

@@ -1,4 +1,4 @@
-<ion-header [translucent]="true">
+<ion-header [translucent]="true" class="header-dinda">
   <ion-toolbar>
     <ion-title>
       @if (tipoUsuario === 'FARMACEUTICO') {
@@ -10,13 +10,7 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">FAQ</ion-title>
-    </ion-toolbar>
-  </ion-header>
-
+<ion-content>
   <div class="ion-padding">
 
     @if (faqs.length === 0) {

@@ -1,0 +1,68 @@
+// Estilos customizados para alertas de interação
+ion-alert.alert-interacao {
+  .alert-message {
+    white-space: pre-line;
+    text-align: left;
+    font-size: 16px;
+    line-height: 1.6;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+}
+
+// Estilos gerais da página
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  padding: 16px;
+  color: var(--ion-color-primary);
+}
+
+.card-dinda {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.list-item-dinda {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --inner-padding-end: 0;
+  margin: 8px 0;
+}
+
+.icon-large {
+  font-size: 32px;
+  margin-right: 12px;
+}
+
+.badge-dinda {
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.empty-state {
+  margin-top: 60px;
+
+  ion-icon {
+    font-size: 64px;
+    color: #ccc;
+    margin-bottom: 16px;
+  }
+
+  h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 8px;
+  }
+
+  p {
+    font-size: 16px;
+    color: #999;
+  }
+}
+

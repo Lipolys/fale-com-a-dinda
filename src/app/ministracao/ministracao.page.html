@@ -8,11 +8,6 @@
     <ion-title>
       {{ isEdit ? '✏️ Editar Remédio' : '➕ Adicionar Remédio' }}
     </ion-title>
-    <ion-buttons slot="end">
-      <ion-button (click)="salvar()" [strong]="true">
-        Salvar
-      </ion-button>
-    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
@@ -32,17 +27,16 @@
         [(ngModel)]="searchTerm"
         (ionInput)="filtrarMedicamentos()"
         placeholder="Digite o nome do medicamento..."
-        [clearInput]="true"
         type="text"
       ></ion-input>
       @if (medicamentoSelecionado) {
-        <ion-icon
-          name="close-circle"
+        <ion-button
+          fill="clear"
           slot="end"
-          color="medium"
           (click)="limparSelecao()"
-          style="cursor: pointer;"
-        ></ion-icon>
+        >
+          <ion-icon name="close-circle" color="medium"></ion-icon>
+        </ion-button>
       }
     </ion-item>
 

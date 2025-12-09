@@ -15,6 +15,12 @@
       <ion-label>Ajuda</ion-label>
     </ion-tab-button>
 
+    <!-- Tab5: Gerenciamento de Interações (apenas Farmacêutico) -->
+    <ion-tab-button tab="tab5" *ngIf="isFarmaceutico">
+      <ion-icon name="warning"></ion-icon>
+      <ion-label>Interações</ion-label>
+    </ion-tab-button>
+
     <ion-tab-button tab="tab4">
       <ion-icon name="person"></ion-icon>
       <ion-label>Perfil</ion-label>

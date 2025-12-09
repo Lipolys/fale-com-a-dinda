@@ -1,0 +1,329 @@
+// ========================================
+// MIXINS GLOBAIS - Fale com a Dinda
+// ========================================
+// Padrões reutilizáveis para toda a aplicação
+
+// ===== CARDS PADRONIZADOS =====
+@mixin card-standard {
+  background: var(--card-background);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+  margin: 16px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+@mixin card-content-padding {
+  padding: 16px;
+}
+
+@mixin card-header {
+  padding: 16px;
+  padding-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+// ===== BOTÕES PADRONIZADOS =====
+@mixin button-primary {
+  --border-radius: 12px;
+  --padding-top: 16px;
+  --padding-bottom: 16px;
+  --padding-start: 24px;
+  --padding-end: 24px;
+  font-weight: 600;
+  font-size: 16px;
+  text-transform: none;
+  letter-spacing: 0.3px;
+  height: 48px;
+  margin: 8px 0;
+}
+
+@mixin button-large {
+  --padding-top: 20px;
+  --padding-bottom: 20px;
+  --padding-start: 28px;
+  --padding-end: 28px;
+  font-size: 18px;
+  font-weight: 600;
+  --border-radius: 12px;
+  height: 56px;
+  margin: 12px 0;
+}
+
+// ===== TIPOGRAFIA PADRONIZADA =====
+@mixin page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--ion-color-primary);
+  margin: 20px 0;
+  padding: 0 20px;
+}
+
+@mixin section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 16px 0 12px;
+  padding: 0;
+}
+
+@mixin subtitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+@mixin body-text {
+  font-size: 16px;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+// ===== ÍCONES PADRONIZADOS =====
+@mixin icon-container($size: 56px, $icon-size: 28px) {
+  width: $size;
+  height: $size;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $icon-size;
+}
+
+// Variações de cor para ícones
+@mixin icon-primary {
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
+  color: var(--ion-color-primary);
+}
+
+@mixin icon-secondary {
+  background: rgba(var(--ion-color-secondary-rgb), 0.1);
+  color: var(--ion-color-secondary);
+}
+
+@mixin icon-success {
+  background: rgba(var(--ion-color-success-rgb), 0.1);
+  color: var(--ion-color-success);
+}
+
+@mixin icon-danger {
+  background: rgba(var(--ion-color-danger-rgb), 0.1);
+  color: var(--ion-color-danger);
+}
+
+@mixin icon-warning {
+  background: rgba(var(--ion-color-warning-rgb), 0.1);
+  color: var(--ion-color-warning);
+}
+
+// ===== BADGES PADRONIZADOS =====
+@mixin badge-standard {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin badge-success {
+  background: rgba(var(--ion-color-success-rgb), 0.15);
+  color: var(--ion-color-success);
+}
+
+@mixin badge-danger {
+  background: rgba(var(--ion-color-danger-rgb), 0.15);
+  color: var(--ion-color-danger);
+}
+
+@mixin badge-warning {
+  background: rgba(var(--ion-color-warning-rgb), 0.15);
+  color: var(--ion-color-warning);
+}
+
+@mixin badge-primary {
+  background: rgba(var(--ion-color-primary-rgb), 0.15);
+  color: var(--ion-color-primary);
+}
+
+// ===== FORMULÁRIOS PADRONIZADOS =====
+@mixin form-section {
+  background: var(--card-background);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--card-shadow);
+}
+
+@mixin input-standard {
+  --background: var(--ion-color-light);
+  --border-radius: 12px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+  font-size: 16px;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+
+  &:focus-within {
+    --background: var(--card-background);
+    border-color: var(--ion-color-primary);
+  }
+}
+
+// ===== TIMELINE/LISTA =====
+@mixin timeline-container {
+  padding: 20px 16px;
+  padding-bottom: 80px;
+}
+
+@mixin timeline-item {
+  display: flex;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+// ===== EMPTY STATES =====
+@mixin empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 70%;
+  padding: 32px;
+  text-align: center;
+
+  img, ion-icon {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 24px;
+    opacity: 0.6;
+    color: var(--ion-color-medium);
+  }
+
+  h3 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  p {
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+    line-height: 1.5;
+    font-size: 16px;
+  }
+}
+
+// ===== MODALS PADRONIZADOS =====
+@mixin modal-standard {
+  --border-radius: 20px;
+  --box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.2);
+
+  ion-content {
+    --background: var(--ion-background-color);
+  }
+
+  ion-toolbar {
+    --background: var(--card-background);
+    --border-width: 0;
+    padding-top: 8px;
+
+    ion-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+  }
+}
+
+@mixin modal-fullscreen {
+  --height: 95%;
+  --border-radius: 20px 20px 0 0;
+}
+
+// ===== TOOLBAR PADRONIZADO =====
+@mixin toolbar-standard {
+  --background: var(--card-background);
+  --border-width: 0;
+  --padding-top: 10px;
+  --padding-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+// ===== FLOATING ACTION BUTTON =====
+@mixin fab-standard {
+  --box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb), 0.3);
+  --border-radius: 16px;
+}
+
+// ===== DIVIDERS =====
+@mixin divider-standard {
+  height: 1px;
+  background: var(--border-color);
+  margin: 16px 0;
+  border: none;
+}
+
+// ===== LOADING STATES =====
+@mixin skeleton-standard {
+  background: linear-gradient(
+    90deg,
+    var(--ion-color-light) 25%,
+    var(--ion-color-light-shade) 50%,
+    var(--ion-color-light) 75%
+  );
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+// ===== ANIMATIONS =====
+@mixin fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@mixin slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+

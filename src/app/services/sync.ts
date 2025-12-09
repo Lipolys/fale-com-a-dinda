@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Injector } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { StorageService, STORAGE_KEYS, SyncQueueItem } from './storage';
@@ -52,6 +52,7 @@ export class SyncService {
 
   private autoSyncInterval: any;
   private readonly AUTO_SYNC_INTERVAL = 5 * 60 * 1000;
+  private _ministraService: any; // Lazy loaded para evitar dependência circular
 
   constructor(
     private http: HttpClient,
@@ -60,7 +61,8 @@ export class SyncService {
     private authService: AuthService,
     private faqService: FaqService,
     private interacaoService: InteracaoService,
-    private dicaService: DicaService
+    private dicaService: DicaService,
+    private injector: Injector
   ) {
     this.initNetworkMonitoring();
     this.initAuthMonitoring();
@@ -253,12 +255,16 @@ export class SyncService {
 
   private async syncCreate(entity: string, uuid: string, data: any, headers: HttpHeaders): Promise<void> {
     const url = `${this.API_URL}/${entity}`;
+    console.log(`📤 POST ${url}`, data);
     const response = await this.http.post<any>(url, data, { headers }).toPromise();
     const collectionKey = this.getCollectionKey(entity);
     const localItem = await this.storage.getFromCollection<BaseLocalModel>(collectionKey, uuid);
     if (localItem) {
-      const updated = markAsSynced(localItem, response.id || response.idfaq || response.iddica);
+      // Determina o serverId baseado na entidade
+      const serverId = response.idministra || response.idmedicamento || response.idfaq || response.iddica || response.id;
+      const updated = markAsSynced(localItem, serverId);
       await this.storage.setInCollection(collectionKey, uuid, updated);
+      console.log(`✅ ${entity} ${uuid} sincronizado com serverId: ${serverId}`);
     }
   }
 
@@ -316,6 +322,12 @@ export class SyncService {
       const url = `${this.API_URL}/ministra`;
       const response = await this.http.get<any[]>(url, { headers }).toPromise();
       if (response) {
+        // Lazy load MinistraService para evitar dependência circular
+        if (!this._ministraService) {
+          const { MinistraService } = await import('./ministra');
+          this._ministraService = this.injector.get(MinistraService);
+        }
+        await this._ministraService.mesclarDoServidor(response);
         console.log(`📥 Baixados ${response.length} registros ministra`);
       }
     } catch (error) {

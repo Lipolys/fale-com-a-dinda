@@ -26,7 +26,11 @@ const routes: Routes = [
     redirectTo: 'app/tab1', // Tenta ir para o app
     pathMatch: 'full'
     // O AuthGuard em 'app' vai pegar e redirecionar para 'login' se não estiver logado
+  },  {
+    path: 'tab5',
+    loadChildren: () => import('./tab5/tab5.module').then( m => m.Tab5PageModule)
   }
+
 ];
 
 @NgModule({

@@ -41,16 +41,17 @@ export class MinistracaoPage implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    // Verifica se é edição
-    if (this.ministracao) {
-      this.isEdit = true;
-      this.carregarDadosEdicao();
-    }
-
     // Subscreve aos medicamentos disponíveis
     this.subscription = this.medicamentoService.medicamentos$.subscribe(
       medicamentos => {
         this.medicamentosDisponiveis = medicamentos;
+
+        // Verifica se é edição e se os medicamentos já foram carregados
+        if (this.ministracao && !this.isEdit && medicamentos.length > 0) {
+          this.isEdit = true;
+          this.carregarDadosEdicao();
+        }
+
         this.filtrarMedicamentos();
       }
     );
@@ -85,6 +86,11 @@ export class MinistracaoPage implements OnInit, OnDestroy {
    * Filtra medicamentos em tempo real
    */
   filtrarMedicamentos(): void {
+    // Se havia um medicamento selecionado e o usuário está editando, limpa a seleção
+    if (this.medicamentoSelecionado && this.searchTerm !== this.medicamentoSelecionado.nome) {
+      this.medicamentoSelecionado = null;
+    }
+
     if (!this.searchTerm || this.searchTerm.trim() === '') {
       this.medicamentosFiltrados = [];
       return;

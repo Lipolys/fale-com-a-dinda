@@ -1,0 +1,228 @@
+<ion-header [translucent]="true">
+  <ion-toolbar class="toolbar-dinda">
+    <ion-title>
+      <span class="toolbar-icon">⚠️</span>
+      Gerenciar Interações
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="syncManual()">
+        <ion-icon slot="icon-only" name="sync-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="content-dinda">
+  <!-- Pull to refresh -->
+  <ion-refresher slot="fixed" (ionRefresh)="syncManual($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Botão para adicionar nova interação -->
+  <div class="container" style="padding-top: 20px;">
+    <ion-button
+      expand="block"
+      size="large"
+      class="button-primary"
+      (click)="toggleFormulario()">
+      <ion-icon slot="start" [name]="mostrarFormulario ? 'close-circle' : 'add-circle'"></ion-icon>
+      {{ mostrarFormulario ? 'Cancelar' : 'Nova Interação' }}
+    </ion-button>
+  </div>
+
+  <!-- Formulário de nova interação -->
+  <div *ngIf="mostrarFormulario" class="card-dinda" style="margin: 16px; animation: fadeIn 0.3s;">
+    <h3 class="section-title" style="margin-top: 0;">📝 Cadastrar Interação</h3>
+
+    <!-- Medicamento 1 -->
+    <div class="form-section">
+      <ion-label class="form-label">Medicamento 1 *</ion-label>
+      <div style="position: relative;">
+        <ion-searchbar
+          [(ngModel)]="searchTerm1"
+          (ionInput)="filtrarMedicamentos1()"
+          placeholder="Buscar medicamento..."
+          [disabled]="!!medicamentoSelecionado1"
+          class="searchbar-dinda">
+        </ion-searchbar>
+
+        <!-- Botão limpar se já selecionou -->
+        <ion-button
+          *ngIf="medicamentoSelecionado1"
+          fill="clear"
+          size="small"
+          (click)="limparMedicamento1()"
+          style="position: absolute; right: 8px; top: 8px; z-index: 10;">
+          <ion-icon slot="icon-only" name="close-circle" color="danger"></ion-icon>
+        </ion-button>
+
+        <!-- Lista de resultados -->
+        <ion-list *ngIf="medicamentosFiltrados1.length > 0" style="margin-top: -12px; border-radius: 12px; overflow: hidden;">
+          <ion-item
+            *ngFor="let med of medicamentosFiltrados1"
+            button
+            (click)="selecionarMedicamento1(med)"
+            class="list-item-dinda">
+            <ion-icon name="medical" slot="start" color="primary"></ion-icon>
+            <ion-label>
+              <h3>{{ med.nome }}</h3>
+              <p>{{ med.classe }}</p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+
+        <!-- Medicamento selecionado -->
+        <div *ngIf="medicamentoSelecionado1" class="medicamento-selecionado">
+          <ion-icon name="checkmark-circle" color="success"></ion-icon>
+          <span><strong>{{ medicamentoSelecionado1.nome }}</strong> - {{ medicamentoSelecionado1.classe }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Medicamento 2 -->
+    <div class="form-section">
+      <ion-label class="form-label">Medicamento 2 *</ion-label>
+      <div style="position: relative;">
+        <ion-searchbar
+          [(ngModel)]="searchTerm2"
+          (ionInput)="filtrarMedicamentos2()"
+          placeholder="Buscar medicamento..."
+          [disabled]="!!medicamentoSelecionado2"
+          class="searchbar-dinda">
+        </ion-searchbar>
+
+        <!-- Botão limpar se já selecionou -->
+        <ion-button
+          *ngIf="medicamentoSelecionado2"
+          fill="clear"
+          size="small"
+          (click)="limparMedicamento2()"
+          style="position: absolute; right: 8px; top: 8px; z-index: 10;">
+          <ion-icon slot="icon-only" name="close-circle" color="danger"></ion-icon>
+        </ion-button>
+
+        <!-- Lista de resultados -->
+        <ion-list *ngIf="medicamentosFiltrados2.length > 0" style="margin-top: -12px; border-radius: 12px; overflow: hidden;">
+          <ion-item
+            *ngFor="let med of medicamentosFiltrados2"
+            button
+            (click)="selecionarMedicamento2(med)"
+            class="list-item-dinda">
+            <ion-icon name="medical" slot="start" color="primary"></ion-icon>
+            <ion-label>
+              <h3>{{ med.nome }}</h3>
+              <p>{{ med.classe }}</p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+
+        <!-- Medicamento selecionado -->
+        <div *ngIf="medicamentoSelecionado2" class="medicamento-selecionado">
+          <ion-icon name="checkmark-circle" color="success"></ion-icon>
+          <span><strong>{{ medicamentoSelecionado2.nome }}</strong> - {{ medicamentoSelecionado2.classe }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gravidade -->
+    <div class="form-section">
+      <ion-label class="form-label">Gravidade *</ion-label>
+      <ion-segment [(ngModel)]="gravidade" class="segment-dinda">
+        <ion-segment-button value="BAIXA">
+          <ion-label>Baixa</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="MEDIA">
+          <ion-label>Média</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="ALTA">
+          <ion-label>Alta</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+    </div>
+
+    <!-- Descrição -->
+    <div class="form-section">
+      <ion-label class="form-label">Descrição da Interação *</ion-label>
+      <ion-textarea
+        [(ngModel)]="descricao"
+        placeholder="Descreva os efeitos e riscos desta interação..."
+        rows="4"
+        class="textarea-dinda">
+      </ion-textarea>
+    </div>
+
+    <!-- Botões de ação -->
+    <div style="display: flex; gap: 12px; margin-top: 20px;">
+      <ion-button
+        expand="block"
+        fill="outline"
+        (click)="limparFormulario()"
+        style="flex: 1;">
+        <ion-icon slot="start" name="refresh"></ion-icon>
+        Limpar
+      </ion-button>
+      <ion-button
+        expand="block"
+        [disabled]="!podeSalvar()"
+        (click)="salvarInteracao()"
+        style="flex: 2;">
+        <ion-icon slot="start" name="save"></ion-icon>
+        Salvar Interação
+      </ion-button>
+    </div>
+  </div>
+
+  <!-- Lista de interações cadastradas -->
+  <div class="container">
+    <h2 class="section-title">
+      <ion-icon name="list" style="vertical-align: middle; margin-right: 8px;"></ion-icon>
+      Interações Cadastradas ({{ interacoes.length }})
+    </h2>
+
+    <!-- Lista vazia -->
+    <div *ngIf="interacoes.length === 0" class="empty-state">
+      <ion-icon name="warning-outline"></ion-icon>
+      <h3>Nenhuma interação cadastrada</h3>
+      <p>Clique em "Nova Interação" para cadastrar a primeira</p>
+    </div>
+
+    <!-- Lista de interações -->
+    <ion-list *ngIf="interacoes.length > 0" class="list-spaced">
+      <ion-item-sliding *ngFor="let interacao of interacoes">
+        <ion-item class="list-item-dinda">
+          <ion-icon name="warning" [color]="getGravidadeCor(interacao.gravidade)" slot="start" class="icon-large"></ion-icon>
+
+          <ion-label>
+            <h2 style="font-weight: 600; font-size: 18px; margin-bottom: 8px;">
+              {{ interacao.medicamento1_nome || 'Medicamento 1' }}
+              <ion-icon name="add" style="vertical-align: middle; font-size: 16px;"></ion-icon>
+              {{ interacao.medicamento2_nome || 'Medicamento 2' }}
+            </h2>
+            <p style="color: var(--text-secondary); margin-bottom: 6px;">
+              <ion-badge [color]="getGravidadeCor(interacao.gravidade)" class="badge-dinda">
+                {{ interacao.gravidade }}
+              </ion-badge>
+            </p>
+            <p style="color: var(--text-primary); line-height: 1.5;">
+              {{ interacao.descricao }}
+            </p>
+          </ion-label>
+
+          <ion-button slot="end" fill="clear" (click)="editarInteracao(interacao)">
+            <ion-icon name="create" color="primary"></ion-icon>
+          </ion-button>
+        </ion-item>
+
+        <ion-item-options side="end">
+          <ion-item-option color="danger" (click)="removerInteracao(interacao)">
+            <ion-icon slot="icon-only" name="trash"></ion-icon>
+          </ion-item-option>
+        </ion-item-options>
+      </ion-item-sliding>
+    </ion-list>
+  </div>
+
+  <!-- Espaçamento no final -->
+  <div style="height: 80px;"></div>
+</ion-content>
+

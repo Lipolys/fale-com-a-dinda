@@ -97,67 +97,102 @@
   // ===== SOMBRAS MAIS SUAVES =====
   --ion-box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   --ion-box-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.15);
+
+  // ===== VARIÁVEIS CUSTOMIZADAS GLOBAIS =====
+  --card-background: #ffffff;
+  --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --text-primary: #1d1d1d;
+  --text-secondary: #666666;
+  --border-color: #e0e0e0;
 }
 
-// ===== MODO ESCURO (OPCIONAL) =====
-// Descomente se quiser suporte ao modo escuro
+// ===== MODO ESCURO =====
+// Configuração completa para evitar conflitos
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    // Redefinição das cores base (o que você já tinha)
-    --ion-background-color: #121212; // Um cinza escuro é melhor que preto puro
+  body {
+    // Cores Base do Sistema
+    --ion-background-color: #121212;
     --ion-background-color-rgb: 18, 18, 18;
     --ion-text-color: #e0e0e0;
     --ion-text-color-rgb: 224, 224, 224;
 
     --ion-toolbar-background: #1e1e1e;
-    --ion-item-background: #1e1e1e; // Fundo de itens e cards
+    --ion-toolbar-color: #e0e0e0;
+    --ion-item-background: #1e1e1e;
 
-    // ===============================================
-    // SUGESTÃO 1: Redefinir TODAS as cores semânticas
-    // ===============================================
+    // ===== CORES SEMÂNTICAS COMPLETAS =====
 
-    // Primária (um pouco mais clara para contraste)
+    // Primária (azul mais claro para contraste)
     --ion-color-primary: #4a8fc7;
     --ion-color-primary-rgb: 74, 143, 199;
     --ion-color-primary-contrast: #ffffff;
     --ion-color-primary-contrast-rgb: 255, 255, 255;
     --ion-color-primary-shade: #417db0;
-    --ion-color-primary-tint: #5c99ce;
+    --ion-color-primary-tint: #5c99cd;
 
-    // Secundária (um pouco mais clara)
+    // Secundária (laranja mais claro)
     --ion-color-secondary: #f6ab73;
-    // ... (defina rgb, contrast, shade, tint para secondary) ...
+    --ion-color-secondary-rgb: 246, 171, 115;
+    --ion-color-secondary-contrast: #000000;
+    --ion-color-secondary-contrast-rgb: 0, 0, 0;
+    --ion-color-secondary-shade: #d89665;
+    --ion-color-secondary-tint: #f7b381;
 
-    // Sucesso
+    // Sucesso (verde mais claro)
     --ion-color-success: #67c79a;
-    // ... (defina rgb, contrast, shade, tint para success) ...
+    --ion-color-success-rgb: 103, 199, 154;
+    --ion-color-success-contrast: #000000;
+    --ion-color-success-contrast-rgb: 0, 0, 0;
+    --ion-color-success-shade: #5baf88;
+    --ion-color-success-tint: #76cda4;
 
-    // Perigo
+    // Perigo (vermelho mais visível)
     --ion-color-danger: #ea5965;
-    // ... (defina rgb, contrast, shade, tint para danger) ...
+    --ion-color-danger-rgb: 234, 89, 101;
+    --ion-color-danger-contrast: #ffffff;
+    --ion-color-danger-contrast-rgb: 255, 255, 255;
+    --ion-color-danger-shade: #ce4e59;
+    --ion-color-danger-tint: #ec6a74;
 
-    // Aviso
+    // Aviso (amarelo mais visível)
     --ion-color-warning: #ffd13a;
-    // ... (defina rgb, contrast, shade, tint para warning) ...
+    --ion-color-warning-rgb: 255, 209, 58;
+    --ion-color-warning-contrast: #000000;
+    --ion-color-warning-contrast-rgb: 0, 0, 0;
+    --ion-color-warning-shade: #e0b833;
+    --ion-color-warning-tint: #ffd64e;
 
-    // Médio (para textos/ícones desabilitados)
-    --ion-color-medium: #7a7a7a;
-    // ... (defina rgb, contrast, shade, tint para medium) ...
+    // Médio (cinza claro)
+    --ion-color-medium: #a0a0a0;
+    --ion-color-medium-rgb: 160, 160, 160;
+    --ion-color-medium-contrast: #000000;
+    --ion-color-medium-contrast-rgb: 0, 0, 0;
+    --ion-color-medium-shade: #8d8d8d;
+    --ion-color-medium-tint: #aaaaaa;
 
-    // Claro (IMPORTANTE: Inverte com o 'dark')
-    --ion-color-light: #1e1e1e; // Cor de "fundo claro" agora é escura
-    --ion-color-light-rgb: 30, 30, 30;
-    --ion-color-light-contrast: #e0e0e0; // Texto sobre fundo claro agora é claro
+    // Claro (INVERTE - agora é escuro)
+    --ion-color-light: #2a2a2a;
+    --ion-color-light-rgb: 42, 42, 42;
+    --ion-color-light-contrast: #e0e0e0;
     --ion-color-light-contrast-rgb: 224, 224, 224;
+    --ion-color-light-shade: #252525;
+    --ion-color-light-tint: #3f3f3f;
 
-    // Escuro (IMPORTANTE: Inverte com o 'light')
-    --ion-color-dark: #e0e0e0; // Cor de "texto escuro" agora é clara
+    // Escuro (INVERTE - agora é claro)
+    --ion-color-dark: #e0e0e0;
     --ion-color-dark-rgb: 224, 224, 224;
-    --ion-color-dark-contrast: #121212; // Texto sobre fundo escuro agora é escuro
+    --ion-color-dark-contrast: #121212;
     --ion-color-dark-contrast-rgb: 18, 18, 18;
+    --ion-color-dark-shade: #c5c5c5;
+    --ion-color-dark-tint: #e3e3e3;
 
-
+    // ===== VARIÁVEIS CUSTOMIZADAS =====
+    --card-background: #1e1e1e;
+    --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
+    --border-color: #333333;
   }
 }
 
@@ -392,6 +427,18 @@
     font-size: 18px;
     line-height: 1.8;
     color: var(--ion-color-dark);
+  }
+
+  .alert-message {
+    font-size: 16px;
+    line-height: 1.8;
+    white-space: pre-line;
+    text-align: left;
+  }
+
+  .alert-head h2 {
+    font-size: 22px;
+    font-weight: 600;
   }
 }
 
