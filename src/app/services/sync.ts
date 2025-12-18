@@ -298,11 +298,23 @@ export class SyncService {
 
   private async syncUpdate(entity: string, uuid: string, data: any, headers: HttpHeaders): Promise<void> {
     const collectionKey = this.getCollectionKey(entity);
-    const localItem = await this.storage.getFromCollection<BaseLocalModel>(collectionKey, uuid);
-    if (!localItem || !localItem.serverId) {
-      throw new Error(`Item ${uuid} não tem serverId para atualizar`);
+    const localItem = await this.storage.getFromCollection<any>(collectionKey, uuid);
+
+    let url: string;
+
+    // Interações usam URL especial com dois IDs: /interacao/:medId1/:medId2
+    if (entity === 'interacao') {
+      if (!localItem?.serverIds?.idmedicamento1 || !localItem?.serverIds?.idmedicamento2) {
+        throw new Error(`Interação ${uuid} não tem serverIds para atualizar`);
+      }
+      url = `${this.API_URL}/${entity}/${localItem.serverIds.idmedicamento1}/${localItem.serverIds.idmedicamento2}`;
+    } else {
+      if (!localItem || !localItem.serverId) {
+        throw new Error(`Item ${uuid} não tem serverId para atualizar`);
+      }
+      url = `${this.API_URL}/${entity}/${localItem.serverId}`;
     }
-    const url = `${this.API_URL}/${entity}/${localItem.serverId}`;
+
     await this.http.put(url, data, { headers }).toPromise();
     const updated = markAsSynced(localItem, localItem.serverId);
     await this.storage.setInCollection(collectionKey, uuid, updated);
@@ -310,12 +322,25 @@ export class SyncService {
 
   private async syncDelete(entity: string, uuid: string, headers: HttpHeaders): Promise<void> {
     const collectionKey = this.getCollectionKey(entity);
-    const localItem = await this.storage.getFromCollection<BaseLocalModel>(collectionKey, uuid);
-    if (!localItem || !localItem.serverId) {
-      await this.storage.removeFromCollection(collectionKey, uuid);
-      return;
+    const localItem = await this.storage.getFromCollection<any>(collectionKey, uuid);
+
+    let url: string;
+
+    // Interações usam URL especial com dois IDs: /interacao/:medId1/:medId2
+    if (entity === 'interacao') {
+      if (!localItem?.serverIds?.idmedicamento1 || !localItem?.serverIds?.idmedicamento2) {
+        await this.storage.removeFromCollection(collectionKey, uuid);
+        return;
+      }
+      url = `${this.API_URL}/${entity}/${localItem.serverIds.idmedicamento1}/${localItem.serverIds.idmedicamento2}`;
+    } else {
+      if (!localItem || !localItem.serverId) {
+        await this.storage.removeFromCollection(collectionKey, uuid);
+        return;
+      }
+      url = `${this.API_URL}/${entity}/${localItem.serverId}`;
     }
-    const url = `${this.API_URL}/${entity}/${localItem.serverId}`;
+
     await this.http.delete(url, { headers }).toPromise();
     await this.storage.removeFromCollection(collectionKey, uuid);
   }

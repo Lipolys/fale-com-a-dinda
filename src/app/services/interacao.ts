@@ -8,10 +8,8 @@ import {
     InteracaoLocal,
     interacaoApiToLocal,
     createBaseModel,
-    generateUUID,
     now,
     markAsUpdated,
-    markAsDeleted,
     SyncStatus
 } from '../models/local.models';
 import { MedicamentoService } from './medicamento';
@@ -266,64 +264,102 @@ export class InteracaoService {
         descricao: string,
         gravidade: 'BAIXA' | 'MEDIA' | 'ALTA'
     }): Promise<InteracaoLocal | null> {
+        const user = await this.authService.getCurrentUser();
+        if (user?.tipo_usuario !== 'FARMACEUTICO') {
+            throw new Error('Apenas farmacêuticos podem editar interações');
+        }
+
         const interacao = await this.buscarPorUuid(uuid);
         if (!interacao) return null;
 
-        const atualizado: InteracaoLocal = {
-            ...interacao,
-            ...markAsUpdated(interacao),
-            descricao: dados.descricao,
-            gravidade: dados.gravidade
-        };
-
-        await this.storage.setInCollection(STORAGE_KEYS.INTERACOES, uuid, atualizado);
-
-        if (interacao.serverId) {
-            // Nota: Interações geralmente são identificadas por IDs compostos no servidor
-            // A lógica de update no servidor pode ser complexa se a chave primária mudar
-            // Aqui assumimos que apenas descrição e gravidade mudam
-            await this.storage.addToSyncQueue({
-                id: generateUUID(),
-                entity: 'interacao',
-                uuid: interacao.uuid,
-                operation: 'update',
-                data: {
-                    descricao: atualizado.descricao,
-                    gravidade: atualizado.gravidade
-                },
-                timestamp: now(),
-                retries: 0,
-                maxRetries: 3
-            });
+        if (!interacao.serverIds?.idmedicamento1 || !interacao.serverIds?.idmedicamento2) {
+            throw new Error('Interação não foi sincronizada ainda');
         }
 
-        await this.carregarInteracoes();
-        return atualizado;
+        try {
+            const token = await this.authService.getAccessToken();
+            if (!token) throw new Error('Não autenticado');
+
+            const headers = new HttpHeaders({
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            });
+
+            const payload = {
+                descricao: dados.descricao,
+                gravidade: dados.gravidade
+            };
+
+            await this.http.put(
+                `${this.API_URL}/interacao/${interacao.serverIds.idmedicamento1}/${interacao.serverIds.idmedicamento2}`,
+                payload,
+                { headers }
+            ).toPromise();
+
+            const atualizado: InteracaoLocal = {
+                ...interacao,
+                ...markAsUpdated(interacao),
+                descricao: dados.descricao,
+                gravidade: dados.gravidade,
+                syncStatus: SyncStatus.SYNCED,
+                syncedAt: now()
+            };
+
+            await this.storage.setInCollection(STORAGE_KEYS.INTERACOES, uuid, atualizado);
+            await this.carregarInteracoes();
+            console.log(`✅ Interação editada online: ${uuid}`);
+            return atualizado;
+
+        } catch (error: any) {
+            console.error('❌ Erro ao editar interação:', error);
+            if (error.status === 0) {
+                throw new Error('Sem conexão. Não foi possível editar a interação.');
+            }
+            throw new Error(error.error?.erro || 'Erro ao editar interação.');
+        }
     }
 
     public async deletar(uuid: string): Promise<boolean> {
+        const user = await this.authService.getCurrentUser();
+        if (user?.tipo_usuario !== 'FARMACEUTICO') {
+            throw new Error('Apenas farmacêuticos podem deletar interações');
+        }
+
         const interacao = await this.buscarPorUuid(uuid);
         if (!interacao) return false;
 
-        const deletado = markAsDeleted(interacao);
-        await this.storage.setInCollection(STORAGE_KEYS.INTERACOES, uuid, deletado);
-
-        if (interacao.serverId) {
-            await this.storage.addToSyncQueue({
-                id: generateUUID(),
-                entity: 'interacao',
-                uuid: interacao.uuid,
-                operation: 'delete',
-                data: null,
-                timestamp: now(),
-                retries: 0,
-                maxRetries: 3
-            });
-        } else {
+        // Se a interação nunca foi sincronizada, apenas remove localmente
+        if (!interacao.serverIds?.idmedicamento1 || !interacao.serverIds?.idmedicamento2) {
             await this.storage.removeFromCollection(STORAGE_KEYS.INTERACOES, uuid);
+            await this.carregarInteracoes();
+            return true;
         }
 
-        await this.carregarInteracoes();
-        return true;
+        try {
+            const token = await this.authService.getAccessToken();
+            if (!token) throw new Error('Não autenticado');
+
+            const headers = new HttpHeaders({
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            });
+
+            await this.http.delete(
+                `${this.API_URL}/interacao/${interacao.serverIds.idmedicamento1}/${interacao.serverIds.idmedicamento2}`,
+                { headers }
+            ).toPromise();
+
+            await this.storage.removeFromCollection(STORAGE_KEYS.INTERACOES, uuid);
+            await this.carregarInteracoes();
+            console.log(`✅ Interação deletada online: ${uuid}`);
+            return true;
+
+        } catch (error: any) {
+            console.error('❌ Erro ao deletar interação:', error);
+            if (error.status === 0) {
+                throw new Error('Sem conexão. Não foi possível deletar a interação.');
+            }
+            throw new Error(error.error?.erro || 'Erro ao deletar interação.');
+        }
     }
 }
