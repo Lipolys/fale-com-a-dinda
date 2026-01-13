@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Storage } from '@ionic/storage-angular';
 
 /**
@@ -9,10 +9,10 @@ import { Storage } from '@ionic/storage-angular';
   providedIn: 'root'
 })
 export class StorageService {
+  private storage = inject(Storage);
+
   private _storage: Storage | null = null;
   private initialized = false;
-
-  constructor(private storage: Storage) {}
 
   /**
    * Inicializa o storage (DEVE ser chamado no app.component)

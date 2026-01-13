@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LoadingController, ToastController } from '@ionic/angular';
@@ -10,25 +10,24 @@ import { AuthService } from '../../services/auth';
   styleUrls: ['login.page.scss'],
   standalone: false
 })
-export class LoginPage implements OnInit {
+export class LoginPage  {
+  private fb = inject(FormBuilder);
+  private authService = inject(AuthService);
+  private router = inject(Router);
+  private loadingCtrl = inject(LoadingController);
+  private toastCtrl = inject(ToastController);
+
 
   loginForm: FormGroup;
 
-  constructor(
-    private fb: FormBuilder,
-    private authService: AuthService,
-    private router: Router,
-    private loadingCtrl: LoadingController,
-    private toastCtrl: ToastController
-  ) {
+  constructor() {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       senha: ['', [Validators.required, Validators.minLength(6)]]
     });
   }
 
-  ngOnInit() {
-  }
+
 
   async submitLogin() {
     if (this.loginForm.invalid) {

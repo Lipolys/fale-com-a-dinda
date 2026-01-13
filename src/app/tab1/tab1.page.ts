@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { AlertController, ToastController, NavController } from '@ionic/angular';
 import { MinistraService } from '../services/ministra';
 import { MinistraLocal, InteracaoLocal } from '../models/local.models';
@@ -23,20 +23,18 @@ interface MedicamentoView {
   standalone: false,
 })
 export class Tab1Page implements OnInit, OnDestroy {
+  private alertController = inject(AlertController);
+  private toastController = inject(ToastController);
+  private ministraService = inject(MinistraService);
+  private navCtrl = inject(NavController);
+  private authService = inject(AuthService);
+  private interacaoService = inject(InteracaoService);
+
 
   medicamentosHoje: MedicamentoView[] = [];
   tipoUsuario: TipoUsuario | null = null;
   interacoesUsuario: InteracaoLocal[] = [];
   private subscription?: Subscription;
-
-  constructor(
-    private alertController: AlertController,
-    private toastController: ToastController,
-    private ministraService: MinistraService,
-    private navCtrl: NavController,
-    private authService: AuthService,
-    private interacaoService: InteracaoService
-  ) { }
 
   async ngOnInit() {
     await this.carregarUsuario();

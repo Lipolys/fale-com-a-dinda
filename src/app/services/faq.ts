@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject } from 'rxjs';
 import { StorageService, STORAGE_KEYS } from './storage';
@@ -21,16 +21,16 @@ import {
     providedIn: 'root'
 })
 export class FaqService {
+    private storage = inject(StorageService);
+    private authService = inject(AuthService);
+    private http = inject(HttpClient);
+
 
     private readonly API_URL = environment.apiUrl;
     private faqSubject = new BehaviorSubject<FaqLocal[]>([]);
     public faq$ = this.faqSubject.asObservable();
 
-    constructor(
-        private storage: StorageService,
-        private authService: AuthService,
-        private http: HttpClient
-    ) {
+    constructor() {
         this.carregarFaqs();
     }
 

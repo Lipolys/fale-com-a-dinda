@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { AlertController, ModalController, ToastController } from '@ionic/angular';
 import { DicaService } from '../services/dica';
 import { NotificacaoService } from '../services/notificacao';
@@ -11,18 +11,16 @@ import { DicaLocal } from '../models/local.models';
   standalone: false
 })
 export class Tab6Page implements OnInit {
+  private dicaService = inject(DicaService);
+  private notificacaoService = inject(NotificacaoService);
+  private alertController = inject(AlertController);
+  private modalController = inject(ModalController);
+  private toastController = inject(ToastController);
+
 
   dicas: DicaLocal[] = [];
   loading = false;
   clientes: any[] = [];
-
-  constructor(
-    private dicaService: DicaService,
-    private notificacaoService: NotificacaoService,
-    private alertController: AlertController,
-    private modalController: ModalController,
-    private toastController: ToastController
-  ) { }
 
   async ngOnInit() {
     await this.carregarDicas();

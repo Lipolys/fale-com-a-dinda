@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { AlertController, LoadingController, ToastController, ModalController } from '@ionic/angular';
 import { MinistraLocal, MedicamentoLocal, SyncStatus } from '../models/local.models';
 import { AuthService } from '../services/auth';
@@ -16,6 +16,16 @@ import { Subscription } from 'rxjs';
   standalone: false,
 })
 export class Tab2Page implements OnInit, OnDestroy {
+  private ministraService = inject(MinistraService);
+  private medicamentoService = inject(MedicamentoService);
+  private authService = inject(AuthService);
+  private syncService = inject(SyncService);
+  private alertCtrl = inject(AlertController);
+  private loadingCtrl = inject(LoadingController);
+  private toastCtrl = inject(ToastController);
+  private modalCtrl = inject(ModalController);
+  private interacaoService = inject(InteracaoService);
+
 
   // Expose enum to template
   public readonly SyncStatus = SyncStatus;
@@ -26,18 +36,6 @@ export class Tab2Page implements OnInit, OnDestroy {
   private clienteUuid: string | null = null;
   private subscriptions: Subscription[] = [];
   private isInitialized = false;
-
-  constructor(
-    private ministraService: MinistraService,
-    private medicamentoService: MedicamentoService,
-    private authService: AuthService,
-    private syncService: SyncService,
-    private alertCtrl: AlertController,
-    private loadingCtrl: LoadingController,
-    private toastCtrl: ToastController,
-    private modalCtrl: ModalController,
-    private interacaoService: InteracaoService
-  ) { }
 
   async ngOnInit() {
     // Configura subscrições aos observables (apenas uma vez)

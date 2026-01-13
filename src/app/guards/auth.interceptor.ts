@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse } from '@angular/common/http';
 import { Observable, from, throwError, BehaviorSubject } from 'rxjs';
 import { switchMap, catchError, filter, take } from 'rxjs/operators';
@@ -6,11 +6,11 @@ import { AuthService } from '../services/auth';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
+  private authService = inject(AuthService);
+
 
   private isRefreshing = false;
   private refreshTokenSubject = new BehaviorSubject<string | null>(null);
-
-  constructor(private authService: AuthService) { }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     // Não adiciona token em rotas públicas

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { AuthService } from '../services/auth';
 import { Usuario } from '../models/auth.model';
 import { AlertController, LoadingController } from '@ionic/angular';
@@ -10,15 +10,13 @@ import { AlertController, LoadingController } from '@ionic/angular';
   standalone: false
 })
 export class Tab4Page implements OnInit {
+  private authService = inject(AuthService);
+  private alertCtrl = inject(AlertController);
+  private loadingCtrl = inject(LoadingController);
+
 
   usuario: Usuario | null = null;
   versaoApp = '1.0.0';
-
-  constructor(
-    private authService: AuthService,
-    private alertCtrl: AlertController,
-    private loadingCtrl: LoadingController
-  ) { }
 
   async ngOnInit() {
     await this.carregarPerfil();

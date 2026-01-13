@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject } from 'rxjs';
 import { StorageService, STORAGE_KEYS } from './storage';
@@ -23,17 +23,17 @@ import { MedicamentoService } from './medicamento';
     providedIn: 'root'
 })
 export class InteracaoService {
+    private storage = inject(StorageService);
+    private medicamentoService = inject(MedicamentoService);
+    private authService = inject(AuthService);
+    private http = inject(HttpClient);
+
 
     private readonly API_URL = environment.apiUrl;
     private interacaoSubject = new BehaviorSubject<InteracaoLocal[]>([]);
     public interacao$ = this.interacaoSubject.asObservable();
 
-    constructor(
-        private storage: StorageService,
-        private medicamentoService: MedicamentoService,
-        private authService: AuthService,
-        private http: HttpClient
-    ) {
+    constructor() {
         this.carregarInteracoes();
     }
 

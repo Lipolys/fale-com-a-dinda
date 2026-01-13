@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject } from 'rxjs';
 import { StorageService, STORAGE_KEYS } from './storage';
@@ -22,16 +22,16 @@ import {
     providedIn: 'root'
 })
 export class DicaService {
+    private storage = inject(StorageService);
+    private authService = inject(AuthService);
+    private http = inject(HttpClient);
+
 
     private readonly API_URL = environment.apiUrl;
     private dicasSubject = new BehaviorSubject<DicaLocal[]>([]);
     public dicas$ = this.dicasSubject.asObservable();
 
-    constructor(
-        private storage: StorageService,
-        private authService: AuthService,
-        private http: HttpClient
-    ) {
+    constructor() {
         this.authService.isAuthenticated$.subscribe(async (isAuthenticated) => {
             if (isAuthenticated) {
                 await this.carregarDicas();

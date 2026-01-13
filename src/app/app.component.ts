@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { Platform } from '@ionic/angular';
 import { StorageService } from './services/storage';
 import { SyncService } from './services/sync';
@@ -12,12 +12,11 @@ import { PushNotifications } from '@capacitor/push-notifications';
   standalone: false,
 })
 export class AppComponent implements OnInit {
-  constructor(
-    private platform: Platform,
-    private storageService: StorageService,
-    private syncService: SyncService,
-    private authService: AuthService
-  ) { }
+  private platform = inject(Platform);
+  private storageService = inject(StorageService);
+  private syncService = inject(SyncService);
+  private authService = inject(AuthService);
+
 
   async ngOnInit() {
     await this.initializeApp();

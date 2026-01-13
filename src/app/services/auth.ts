@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, from } from 'rxjs';
 import { tap, switchMap, catchError, filter, map } from 'rxjs/operators';
@@ -18,6 +18,10 @@ import {
   providedIn: 'root'
 })
 export class AuthService {
+  private http = inject(HttpClient);
+  private storage = inject(StorageService);
+  private router = inject(Router);
+
   private readonly API_URL = environment.apiUrl;
 
   // BehaviorSubject para saber o estado de autenticação
@@ -31,11 +35,7 @@ export class AuthService {
   // Observable para o AuthGuard
   public authStateForGuard$: Observable<boolean | null> = this.authState.asObservable();
 
-  constructor(
-    private http: HttpClient,
-    private storage: StorageService,
-    private router: Router,
-  ) {
+  constructor() {
     this.verificarAutenticacaoInicial();
   }
 

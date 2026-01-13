@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, inject } from '@angular/core';
 import { ModalController, LoadingController, ToastController } from '@ionic/angular';
 import { MedicamentoLocal, MinistraLocal } from '../models/local.models';
 import { MedicamentoService } from '../services/medicamento';
@@ -11,6 +11,11 @@ import { Subscription } from 'rxjs';
   standalone: false,
 })
 export class MinistracaoPage implements OnInit, OnDestroy {
+  private modalCtrl = inject(ModalController);
+  private medicamentoService = inject(MedicamentoService);
+  private loadingCtrl = inject(LoadingController);
+  private toastCtrl = inject(ToastController);
+
 
   @Input() ministracao?: MinistraLocal;
   @Input() clienteUuid!: string;
@@ -32,13 +37,6 @@ export class MinistracaoPage implements OnInit, OnDestroy {
   status = 1;
 
   private subscription?: Subscription;
-
-  constructor(
-    private modalCtrl: ModalController,
-    private medicamentoService: MedicamentoService,
-    private loadingCtrl: LoadingController,
-    private toastCtrl: ToastController
-  ) { }
 
   ngOnInit() {
     // Subscreve aos medicamentos disponíveis

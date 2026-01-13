@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject } from 'rxjs';
 import { StorageService, STORAGE_KEYS } from './storage';
@@ -20,16 +20,16 @@ import {
     providedIn: 'root'
 })
 export class NotificacaoService {
+    private storage = inject(StorageService);
+    private authService = inject(AuthService);
+    private http = inject(HttpClient);
+
 
     private readonly API_URL = environment.apiUrl;
     private notificacoesSubject = new BehaviorSubject<NotificacaoLocal[]>([]);
     public notificacoes$ = this.notificacoesSubject.asObservable();
 
-    constructor(
-        private storage: StorageService,
-        private authService: AuthService,
-        private http: HttpClient
-    ) {
+    constructor() {
         this.authService.isAuthenticated$.subscribe(async (isAuthenticated) => {
             if (isAuthenticated) {
                 await this.carregarNotificacoes();

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { AuthService } from '../services/auth';
 import { Subscription } from 'rxjs';
 
@@ -9,11 +9,11 @@ import { Subscription } from 'rxjs';
   standalone: false,
 })
 export class TabsPage implements OnInit, OnDestroy {
+  private authService = inject(AuthService);
+
 
   isFarmaceutico = false;
   private subscription?: Subscription;
-
-  constructor(private authService: AuthService) {}
 
   ngOnInit() {
     // Subscreve ao estado de autenticação para atualizar o tipo de usuário

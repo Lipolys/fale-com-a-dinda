@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { AlertController, LoadingController, ToastController } from '@ionic/angular';
 import { InteracaoLocal, MedicamentoLocal } from '../models/local.models';
 import { InteracaoService } from '../services/interacao';
@@ -14,6 +14,14 @@ import { Subscription } from 'rxjs';
   standalone: false,
 })
 export class Tab5Page implements OnInit, OnDestroy {
+  private interacaoService = inject(InteracaoService);
+  private medicamentoService = inject(MedicamentoService);
+  private authService = inject(AuthService);
+  private syncService = inject(SyncService);
+  private alertCtrl = inject(AlertController);
+  private loadingCtrl = inject(LoadingController);
+  private toastCtrl = inject(ToastController);
+
 
   interacoes: InteracaoLocal[] = [];
   medicamentos: MedicamentoLocal[] = [];
@@ -33,16 +41,6 @@ export class Tab5Page implements OnInit, OnDestroy {
 
   private subscriptions: Subscription[] = [];
   private farmaceuticoUuid: string | null = null;
-
-  constructor(
-    private interacaoService: InteracaoService,
-    private medicamentoService: MedicamentoService,
-    private authService: AuthService,
-    private syncService: SyncService,
-    private alertCtrl: AlertController,
-    private loadingCtrl: LoadingController,
-    private toastCtrl: ToastController
-  ) { }
 
   async ngOnInit() {
     // Subscreve às interações

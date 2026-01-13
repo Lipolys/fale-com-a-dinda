@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { StorageService, STORAGE_KEYS } from './storage';
 import { AuthService } from './auth';
@@ -25,18 +25,18 @@ import {
   providedIn: 'root'
 })
 export class MinistraService {
+  private storage = inject(StorageService);
+  private authService = inject(AuthService);
+  private medicamentoService = inject(MedicamentoService);
+  private syncService = inject(SyncService);
+
 
   // Observable para componentes reagirem a mudanças
   private ministraSubject = new BehaviorSubject<MinistraLocal[]>([]);
   public ministra$ = this.ministraSubject.asObservable();
   private clienteUuid: string | null = null;
 
-  constructor(
-    private storage: StorageService,
-    private authService: AuthService,
-    private medicamentoService: MedicamentoService,
-    private syncService: SyncService
-  ) {
+  constructor() {
     // Limpa itens inválidos da fila de sincronização ao iniciar
     this.storage.cleanInvalidMinistraQueue().catch(err =>
       console.error('Erro ao limpar fila:', err)

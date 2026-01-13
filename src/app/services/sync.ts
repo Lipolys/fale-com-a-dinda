@@ -1,4 +1,4 @@
-import { Injectable, Injector } from '@angular/core';
+import { Injectable, Injector, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { StorageService, STORAGE_KEYS, SyncQueueItem } from './storage';
@@ -36,6 +36,15 @@ export interface SyncState {
   providedIn: 'root'
 })
 export class SyncService {
+  private http = inject(HttpClient);
+  private storage = inject(StorageService);
+  private medicamentoService = inject(MedicamentoService);
+  private authService = inject(AuthService);
+  private faqService = inject(FaqService);
+  private interacaoService = inject(InteracaoService);
+  private dicaService = inject(DicaService);
+  private injector = inject(Injector);
+
 
   private readonly API_URL = environment.apiUrl;
 
@@ -54,16 +63,7 @@ export class SyncService {
   private readonly AUTO_SYNC_INTERVAL = 5 * 60 * 1000;
   private _ministraService: any; // Lazy loaded para evitar dependência circular
 
-  constructor(
-    private http: HttpClient,
-    private storage: StorageService,
-    private medicamentoService: MedicamentoService,
-    private authService: AuthService,
-    private faqService: FaqService,
-    private interacaoService: InteracaoService,
-    private dicaService: DicaService,
-    private injector: Injector
-  ) {
+  constructor() {
     this.initNetworkMonitoring();
     this.initAuthMonitoring();
   }

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FaqService } from '../services/faq';
 import { FaqLocal, SyncStatus } from '../models/local.models';
 import { AuthService } from '../services/auth';
@@ -12,20 +12,18 @@ import { TipoUsuario } from '../models/auth.model';
   standalone: false,
 })
 export class Tab3Page implements OnInit {
+  private faqService = inject(FaqService);
+  private authService = inject(AuthService);
+  private alertCtrl = inject(AlertController);
+  private toastCtrl = inject(ToastController);
+  private loadingCtrl = inject(LoadingController);
+
 
   // Expose enum to template
   public readonly SyncStatus = SyncStatus;
 
   faqs: FaqLocal[] = [];
   tipoUsuario: TipoUsuario | null = null;
-
-  constructor(
-    private faqService: FaqService,
-    private authService: AuthService,
-    private alertCtrl: AlertController,
-    private toastCtrl: ToastController,
-    private loadingCtrl: LoadingController
-  ) { }
 
   async ngOnInit() {
     this.carregarUsuario();

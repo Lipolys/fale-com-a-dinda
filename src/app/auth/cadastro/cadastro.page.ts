@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LoadingController, ToastController } from '@ionic/angular';
@@ -24,17 +24,17 @@ export const senhasConferemValidator: ValidatorFn = (
   standalone: false,
 })
 export class CadastroPage implements OnInit {
+  private fb = inject(FormBuilder);
+  private authService = inject(AuthService);
+  private router = inject(Router);
+  private loadingCtrl = inject(LoadingController);
+  private toastCtrl = inject(ToastController);
+
 
   cadastroForm: FormGroup;
   maxDate: string;
 
-  constructor(
-    private fb: FormBuilder,
-    private authService: AuthService,
-    private router: Router,
-    private loadingCtrl: LoadingController,
-    private toastCtrl: ToastController
-  ) {
+  constructor() {
     // Define data máxima para nascimento (ex: 18 anos atrás)
     const hoje = new Date();
     hoje.setFullYear(hoje.getFullYear() - 18);

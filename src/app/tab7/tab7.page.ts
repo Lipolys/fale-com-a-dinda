@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { MedicamentoService } from '../services/medicamento';
 import { InteracaoService } from '../services/interacao';
 import { MedicamentoLocal, InteracaoLocal } from '../models/local.models';
@@ -11,6 +11,9 @@ import { Subscription } from 'rxjs';
     standalone: false,
 })
 export class Tab7Page implements OnInit, OnDestroy {
+    private medicamentoService = inject(MedicamentoService);
+    private interacaoService = inject(InteracaoService);
+
 
     medicamentos: MedicamentoLocal[] = [];
     medicamentosFiltrados: MedicamentoLocal[] = [];
@@ -21,11 +24,6 @@ export class Tab7Page implements OnInit, OnDestroy {
     interacoesPorMedicamento: Map<string, InteracaoLocal[]> = new Map();
 
     private subscriptions: Subscription[] = [];
-
-    constructor(
-        private medicamentoService: MedicamentoService,
-        private interacaoService: InteracaoService
-    ) { }
 
     ngOnInit() {
         this.setupSubscriptions();
