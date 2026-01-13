@@ -49,8 +49,9 @@ export class NotificacaoService {
 
     /**
      * Criar e enviar notificação para clientes
+     * @param dto Deve conter: titulo, mensagem, cliente_server_ids (array de inteiros)
      */
-    public async enviarNotificacao(dto: any): Promise<NotificacaoLocal> {
+    public async enviarNotificacao(dto: CriarNotificacaoDTO | any): Promise<NotificacaoLocal> {
         const user = await this.authService.getCurrentUser();
         if (user?.tipo_usuario !== 'FARMACEUTICO') {
             throw new Error('Apenas farmacêuticos podem enviar notificações');
@@ -60,49 +61,32 @@ export class NotificacaoService {
             const token = await this.authService.getAccessToken();
             if (!token) throw new Error('Não autenticado');
 
+            // Validar campos obrigatórios
+            if (!dto.titulo || !dto.titulo.trim()) {
+                throw new Error('Título da notificação é obrigatório');
+            }
+            if (!dto.mensagem || !dto.mensagem.trim()) {
+                throw new Error('Mensagem da notificação é obrigatória');
+            }
+            if (!dto.cliente_server_ids || dto.cliente_server_ids.length === 0) {
+                throw new Error('Selecione pelo menos um destinatário');
+            }
+
             const headers = new HttpHeaders({
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             });
 
-            // Mapear UUIDs para IDs inteiros (serverId)
-            // Precisamos buscar os usuários locais ou confiar que o caller passou os dados corretos.
-            // O `dto.cliente_uuids` são UUIDs locais.
-            // Para enviar para a API, precisamos dos IDs numéricos.
-
-            // Vamos buscar os clientes novamente para mapear (ou otimizar isso passando o objeto cliente completo)
-            // Por segurança, vamos buscar via API ou cache se possível.
-            // Como `buscarClientes` já retorna a lista com `idusuario` (assumido), vamos usar um cache simples ou pedir para quem chama.
-            // Mas para simplificar a assinatura, vamos fazer o lookup aqui se possível.
-
-            // Nota: O ideal seria ter um `UsuarioService` que mapeia UUID -> ID.
-            // Vou assumir que o DTO pode receber opcionalmente `cliente_uuids` E `cliente_server_ids` se o caller já souber.
-            // Ou vamos iterar sobre o resultado de `buscarClientes` (que deve ser cacheado pelo caller).
-
-            // Melhor abordagem: O caller (Tab6) tem a lista de clientes.
-            // Vamos mudar a assinatura do `enviarNotificacao` para aceitar `serverIds` diretamente ou fazer o lookup.
-            // Vou optar por fazer o lookup buscando os clientes novamente (cache curto) ou filtrando se tivermos acesso.
-            // Dado que `buscarClientes` faz requisição HTTP, melhor não chamar de novo.
-
-            // ALTERNATIVA: O `Tab6` passa os IDs numéricos.
-            // O `Tab6` chama `buscarClientes`, que retorna objetos com `idusuario`.
-            // O `Tab6` seleciona e passa.
-
-            // Vamos atualizar o DTO recebido para esperar `cliente_server_ids` OU fazer o mapping se tivermos os dados.
-            // Como não temos banco de usuários local persistido com `serverId` garantido (só `UsuarioLocal` se logado),
-            // mas `buscarClientes` retorna da API.
-
+            // Construir payload conforme esperado pela API
+            // Referência: API_NOTIFICACOES.md - POST /enviar
+            // Campos obrigatórios: titulo (String), mensagem (String), clienteIds (Array[Int])
             const payload = {
-                titulo: dto.titulo,
-                mensagem: dto.mensagem,
-                clienteIds: dto.cliente_server_ids // Espera-se array de inteiros vindos do caller
+                titulo: dto.titulo.trim(),
+                mensagem: dto.mensagem.trim(),
+                clienteIds: dto.cliente_server_ids // Array de inteiros (IDs dos usuários do servidor)
             };
 
-            if (!payload.clienteIds || payload.clienteIds.length === 0) {
-                // Fallback: se não passou serverIds, tenta mapear (mas provavelmente falhará se não tivermos os dados)
-                // Assumindo que o caller (Tab6) vai ser atualizado para passar `cliente_server_ids`
-                throw new Error('IDs dos clientes não fornecidos.');
-            }
+            console.log('📤 Enviando notificação para API:', payload);
 
             const response = await this.http.post<any>(
                 `${this.API_URL}/notificacao/enviar`,
@@ -110,27 +94,30 @@ export class NotificacaoService {
                 { headers }
             ).toPromise();
 
+            console.log('✅ Resposta da API:', response);
+
             const notificacao: NotificacaoLocal = {
                 ...createBaseModel(),
-                serverId: response.idnotificacao || null,
-                titulo: dto.titulo,
-                mensagem: dto.mensagem,
-                farmaceutico_uuid: user.idusuario.toString(), // ou uuid se tiver
-                cliente_uuids: dto.cliente_uuids || [], // Mantém UUIDs para referência local se fornecidos
+                serverId: response?.idnotificacao || null,
+                titulo: dto.titulo.trim(),
+                mensagem: dto.mensagem.trim(),
+                farmaceutico_uuid: user.idusuario?.toString() || 'unknown',
+                cliente_uuids: dto.cliente_uuids || [],
                 enviado: true,
                 enviadoEm: now(),
-                syncStatus: SyncStatus.SYNCED, // Já foi pro servidor
+                syncStatus: SyncStatus.SYNCED,
                 syncedAt: now()
             };
 
             await this.storage.setInCollection(STORAGE_KEYS.NOTIFICACOES, notificacao.uuid, notificacao);
             await this.carregarNotificacoes();
-            console.log(`✅ Notificação enviada: ${notificacao.uuid}`);
+            console.log(`✅ Notificação salva localmente: ${notificacao.uuid}`);
             return notificacao;
 
         } catch (error: any) {
             console.error('❌ Erro ao enviar notificação:', error);
-            throw new Error(error.error?.mensagem || 'Erro ao enviar notificação.');
+            const mensagem = error.error?.mensagem || error.message || 'Erro ao enviar notificação';
+            throw new Error(mensagem);
         }
     }
 
@@ -162,4 +149,3 @@ export class NotificacaoService {
         }
     }
 }
-

@@ -135,14 +135,10 @@ export interface CriarNotificacaoDTO {
   titulo: string;
   mensagem: string;
   cliente_uuids: string[];
+  cliente_server_ids?: number[]; // IDs do servidor para envio
   enviarParaTodos?: boolean;
   // Opcional: linkar com uma dica
   dica_uuid?: string;
-}
-
-export interface CriarDicaLocalDTO {
-  texto: string;
-  farmaceutico_uuid?: string;
 }
 
 // ==================== FAQ ====================
@@ -557,3 +553,44 @@ export function dicaApiToLocal(
     farmaceutico_crf: api.farmaceutico?.crf
   };
 }
+
+/**
+ * Converte NotificacaoLocal para formato da API
+ * Referência: API_NOTIFICACOES.md - POST /enviar
+ * Requer campos: titulo, mensagem, clienteIds
+ */
+export function notificacaoLocalToApi(
+  local: NotificacaoLocal,
+  clienteServerIds: number[]
+): any {
+  return {
+    titulo: local.titulo,
+    mensagem: local.mensagem,
+    clienteIds: clienteServerIds
+  };
+}
+
+/**
+ * Converte resposta da API para NotificacaoLocal
+ */
+export function notificacaoApiToLocal(
+  api: any,
+  existingLocal?: NotificacaoLocal
+): NotificacaoLocal {
+  const base = existingLocal || createBaseModel();
+
+  return {
+    ...base,
+    serverId: api.idnotificacao,
+    titulo: api.titulo,
+    mensagem: api.mensagem,
+    farmaceutico_uuid: existingLocal?.farmaceutico_uuid || generateUUID(),
+    cliente_uuids: existingLocal?.cliente_uuids || [],
+    enviado: true,
+    enviadoEm: api.data_envio || now(),
+    syncStatus: SyncStatus.SYNCED,
+    syncedAt: now(),
+    serverUpdatedAt: api.updatedAt || api.createdAt
+  };
+}
+

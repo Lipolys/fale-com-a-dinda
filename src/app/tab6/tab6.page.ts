@@ -238,22 +238,31 @@ export class Tab6Page implements OnInit {
             const enviarParaTodos = data.includes('todos');
             const clientesSelecionados = data.filter((v: string) => v !== 'todos');
 
-            // Mapear para IDs do servidor
+            // Mapear UUIDs para IDs do servidor (idusuario)
             const serverIds: number[] = [];
+            const clientesValidos: any[] = [];
 
-            this.clientes.forEach(c => {
-              if (clientesSelecionados.includes(c.uuid) && c.idusuario) {
-                serverIds.push(c.idusuario);
+            clientes.forEach(c => {
+              if (enviarParaTodos || clientesSelecionados.includes(c.uuid)) {
+                if (c.idusuario) {
+                  serverIds.push(c.idusuario);
+                  clientesValidos.push(c);
+                } else {
+                  console.warn(`⚠️ Cliente ${c.nome} não possui idusuario`, c);
+                }
               }
             });
 
-            if (enviarParaTodos) {
-              this.clientes.forEach(c => {
-                if (c.idusuario && !serverIds.includes(c.idusuario)) {
-                  serverIds.push(c.idusuario);
-                }
-              });
+            if (serverIds.length === 0) {
+              this.mostrarToast('Erro: Nenhum cliente válido selecionado', 'danger');
+              return false;
             }
+
+            console.log('📤 Clientes selecionados para envio:', {
+              quantidade: serverIds.length,
+              ids: serverIds,
+              nomes: clientesValidos.map(c => c.nome)
+            });
 
             await this.processarEnvioNotificacao(dica, clientesSelecionados, serverIds, enviarParaTodos);
             return true;
@@ -268,14 +277,32 @@ export class Tab6Page implements OnInit {
   async processarEnvioNotificacao(dica: DicaLocal, clienteUuids: string[], clienteServerIds: number[], enviarParaTodos: boolean) {
     this.loading = true;
     try {
-      await this.notificacaoService.enviarNotificacao({
-        dica_uuid: dica.uuid,
-        cliente_uuids: clienteUuids,
+      // Validar que temos os IDs dos servidores
+      if (!clienteServerIds || clienteServerIds.length === 0) {
+        throw new Error('Erro: nenhum cliente selecionado para receber a notificação');
+      }
+
+      // Preparar dados para envio
+      const dadosNotificacao = {
+        titulo: 'Dica de Saúde',        // Título da notificação (OBRIGATÓRIO)
+        mensagem: dica.texto,            // Texto da dica como mensagem
         cliente_server_ids: clienteServerIds,
+        cliente_uuids: clienteUuids,
+        dica_uuid: dica.uuid,
         enviarParaTodos
+      };
+
+      console.log('📢 Enviando notificação:', {
+        titulo: dadosNotificacao.titulo,
+        mensagem: dadosNotificacao.mensagem.substring(0, 50) + '...',
+        destinatarios: clienteServerIds.length,
+        ids: clienteServerIds
       });
+
+      await this.notificacaoService.enviarNotificacao(dadosNotificacao);
       this.mostrarToast('Notificação enviada com sucesso!', 'success');
     } catch (error: any) {
+      console.error('❌ Erro ao enviar notificação:', error);
       this.mostrarToast(error.message || 'Erro ao enviar notificação', 'danger');
     } finally {
       this.loading = false;
@@ -298,4 +325,3 @@ export class Tab6Page implements OnInit {
   }
 
 }
-
