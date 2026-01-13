@@ -3,6 +3,7 @@ import { Platform } from '@ionic/angular';
 import { StorageService } from './services/storage';
 import { SyncService } from './services/sync';
 import { AuthService } from './services/auth';
+import { PushNotifications } from '@capacitor/push-notifications';
 
 @Component({
   selector: 'app-root',
@@ -16,7 +17,7 @@ export class AppComponent implements OnInit {
     private storageService: StorageService,
     private syncService: SyncService,
     private authService: AuthService
-  ) {}
+  ) { }
 
   async ngOnInit() {
     await this.initializeApp();
@@ -31,5 +32,38 @@ export class AppComponent implements OnInit {
     // Verifica autenticação ao iniciar o app
     await this.authService.verificarAutenticacaoInicial();
     console.log('Auth State Verified from AppComponent');
+
+    if (this.platform.is('capacitor')) {
+      await this.initPush();
+    }
+  }
+
+  async initPush() {
+    try {
+      await PushNotifications.requestPermissions();
+      await PushNotifications.register();
+
+      PushNotifications.addListener('registration', token => {
+        console.info('Push Registration Success', token.value);
+        // Salvar token no auth service para enviar ao backend quando logado
+        this.authService.setDeviceToken(token.value);
+      });
+
+      PushNotifications.addListener('registrationError', error => {
+        console.error('Push Registration Error', error);
+      });
+
+      PushNotifications.addListener('pushNotificationReceived', notification => {
+        console.log('Push received:', notification);
+        // Opcional: Atualizar lista de notificações se estiver na tela
+      });
+
+      PushNotifications.addListener('pushNotificationActionPerformed', notification => {
+        console.log('Push action:', notification);
+        // Navegar para tela de notificações
+      });
+    } catch (e) {
+      console.error('Erro ao inicializar Push:', e);
+    }
   }
 }

@@ -14,6 +14,7 @@ export class Tab6Page implements OnInit {
 
   dicas: DicaLocal[] = [];
   loading = false;
+  clientes: any[] = [];
 
   constructor(
     private dicaService: DicaService,
@@ -21,7 +22,7 @@ export class Tab6Page implements OnInit {
     private alertController: AlertController,
     private modalController: ModalController,
     private toastController: ToastController
-  ) {}
+  ) { }
 
   async ngOnInit() {
     await this.carregarDicas();
@@ -192,7 +193,8 @@ export class Tab6Page implements OnInit {
   }
 
   async enviarNotificacao(dica: DicaLocal) {
-    const clientes = await this.notificacaoService.buscarClientes();
+    this.clientes = await this.notificacaoService.buscarClientes();
+    const clientes = this.clientes;
     const previewTexto = dica.texto.length > 50 ? dica.texto.substring(0, 50) + '...' : dica.texto;
 
     const inputs: any[] = [
@@ -236,7 +238,24 @@ export class Tab6Page implements OnInit {
             const enviarParaTodos = data.includes('todos');
             const clientesSelecionados = data.filter((v: string) => v !== 'todos');
 
-            await this.processarEnvioNotificacao(dica, clientesSelecionados, enviarParaTodos);
+            // Mapear para IDs do servidor
+            const serverIds: number[] = [];
+
+            this.clientes.forEach(c => {
+              if (clientesSelecionados.includes(c.uuid) && c.idusuario) {
+                serverIds.push(c.idusuario);
+              }
+            });
+
+            if (enviarParaTodos) {
+              this.clientes.forEach(c => {
+                if (c.idusuario && !serverIds.includes(c.idusuario)) {
+                  serverIds.push(c.idusuario);
+                }
+              });
+            }
+
+            await this.processarEnvioNotificacao(dica, clientesSelecionados, serverIds, enviarParaTodos);
             return true;
           }
         }
@@ -246,12 +265,13 @@ export class Tab6Page implements OnInit {
     await alert.present();
   }
 
-  async processarEnvioNotificacao(dica: DicaLocal, clienteUuids: string[], enviarParaTodos: boolean) {
+  async processarEnvioNotificacao(dica: DicaLocal, clienteUuids: string[], clienteServerIds: number[], enviarParaTodos: boolean) {
     this.loading = true;
     try {
       await this.notificacaoService.enviarNotificacao({
         dica_uuid: dica.uuid,
         cliente_uuids: clienteUuids,
+        cliente_server_ids: clienteServerIds,
         enviarParaTodos
       });
       this.mostrarToast('Notificação enviada com sucesso!', 'success');

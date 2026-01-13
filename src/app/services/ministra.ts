@@ -4,6 +4,7 @@ import { StorageService, STORAGE_KEYS } from './storage';
 import { AuthService } from './auth';
 import { MedicamentoService } from './medicamento';
 import { SyncService } from './sync';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import {
   MinistraLocal,
   CriarMinistraLocalDTO,
@@ -149,6 +150,9 @@ export class MinistraService {
     // 5. Notifica mudança para sync instantâneo
     this.syncService.notifyDataChanged();
 
+    // 6. Agenda notificação local
+    await this.agendarNotificacao(ministra);
+
     return ministra;
   }
 
@@ -239,6 +243,12 @@ export class MinistraService {
     // 6. Notifica mudança para sync instantâneo
     this.syncService.notifyDataChanged();
 
+    // 7. Reagendar notificação local
+    // Primeiro cancela a antiga (se existir) usando o mesmo UUID. O ID numérico é o mesmo.
+    // O agendarNotificacao agenda por cima pois usa o mesmo ID, mas para garantir limpeza:
+    await this.cancelarNotificacao(uuid);
+    await this.agendarNotificacao(atualizado);
+
     console.log(`✅ Ministração ${uuid} atualizada localmente`, atualizado);
     return atualizado;
   }
@@ -316,6 +326,9 @@ export class MinistraService {
 
     // 6. Notifica mudança para sync instantâneo
     this.syncService.notifyDataChanged();
+
+    // 7. Cancela notificação local
+    await this.cancelarNotificacao(uuid);
 
     console.log(`✅ Ministração ${uuid} marcada para deleção`);
     return true;
@@ -427,6 +440,18 @@ export class MinistraService {
     }
 
     await this.carregarMinistra();
+
+    // Reagendar notificações para todos os itens novos/atualizados
+    // Idealmente só para os que mudaram, mas para garantir podemos reagendar todos ativos.
+    const ativos = await this.listar();
+    for (const m of ativos) {
+      if (!m.deletedLocally) {
+        await this.agendarNotificacao(m);
+      } else {
+        await this.cancelarNotificacao(m.uuid);
+      }
+    }
+
     console.log(`✅ Mesclagem de ministrações concluída`);
   }
 
@@ -436,5 +461,74 @@ export class MinistraService {
   private async buscarPorServerId(serverId: number): Promise<MinistraLocal | null> {
     const todas = await this.storage.getCollectionAsArray<MinistraLocal>(STORAGE_KEYS.MINISTRA);
     return todas.find(m => m.serverId === serverId) || null;
+  }
+  // ==================== NOTIFICAÇÕES LOCAIS ====================
+
+  /**
+   * Agenda notificação local para o horário do medicamento
+   */
+  private async agendarNotificacao(ministra: MinistraLocal): Promise<void> {
+    if (!ministra.horario || !ministra.status) return; // Se inativo ou sem horário, não agenda
+
+    // Converter 'HH:mm' para Date
+    // O schedule 'on' do capacitor usa objeto { hour, minute }
+    const [horas, minutos] = ministra.horario.split(':').map(Number);
+
+    // Precisamos de um ID numérico único para a notificação.
+    const notifId = this.uuidToInteger(ministra.uuid);
+
+    try {
+      await LocalNotifications.requestPermissions();
+
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            title: 'Hora do Medicamento',
+            body: `Está na hora de tomar ${ministra.medicamento_nome || 'seu remédio'}.`,
+            id: notifId,
+            schedule: {
+              on: { hour: horas, minute: minutos },
+              allowWhileIdle: true
+            },
+            sound: 'beep.wav',
+            smallIcon: 'ic_stat_icon_config_sample',
+            actionTypeId: '',
+            extra: {
+              ministra_uuid: ministra.uuid
+            }
+          }
+        ]
+      });
+      console.log(`🔔 Notificação agendada para ${ministra.horario} (ID: ${notifId})`);
+
+    } catch (e) {
+      console.error('Erro ao agendar notificação:', e);
+    }
+  }
+
+  /**
+   * Cancela notificação local
+   */
+  private async cancelarNotificacao(uuid: string): Promise<void> {
+    const notifId = this.uuidToInteger(uuid);
+    try {
+      await LocalNotifications.cancel({ notifications: [{ id: notifId }] });
+      console.log(`🔕 Notificação cancelada (ID: ${notifId})`);
+    } catch (e) {
+      // Ignora erro se não existir
+    }
+  }
+
+  /**
+   * Helper Hash string to 32-bit integer
+   */
+  private uuidToInteger(uuid: string): number {
+    let hash = 0;
+    for (let i = 0; i < uuid.length; i++) {
+      const char = uuid.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash); // Ensure positive
   }
 }

@@ -117,24 +117,27 @@ export interface CriarDicaLocalDTO {
 
 export interface NotificacaoLocal extends BaseLocalModel {
   // Relacionamentos
-  dica_uuid: string;
   farmaceutico_uuid: string;
   cliente_uuids: string[];  // Lista de UUIDs dos clientes destinatários
 
   // Dados
+  titulo: string;
+  mensagem: string;
   enviado: boolean;
   enviadoEm?: string;       // ISO timestamp de quando foi enviado
   erroEnvio?: string;       // Mensagem de erro se houver
 
-  // Desnormalizado
-  dica_titulo?: string;
-  dica_texto?: string;
+  // Compatibilidade antiga (opcional)
+  dica_uuid?: string;
 }
 
 export interface CriarNotificacaoDTO {
-  dica_uuid: string;
+  titulo: string;
+  mensagem: string;
   cliente_uuids: string[];
   enviarParaTodos?: boolean;
+  // Opcional: linkar com uma dica
+  dica_uuid?: string;
 }
 
 export interface CriarDicaLocalDTO {

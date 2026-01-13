@@ -285,4 +285,18 @@ export class AuthService {
     const authData = await this.getAuthData();
     return authData?.usuario || null;
   }
+
+  /**
+   * Salva o token do dispositivo push notification
+   */
+  async setDeviceToken(token: string): Promise<void> {
+    console.log('📱 Device Token recebido:', token);
+    await this.storage.set('DEVICE_TOKEN', token);
+
+    // TODO: Enviar para o backend quando houver endpoint disponível
+    // const user = await this.getCurrentUser();
+    // if (user) {
+    //    this.http.post(...)
+    // }
+  }
 }
